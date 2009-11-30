@@ -1,0 +1,188 @@
+<project name="Gist" default="build">
+
+  <property name="src" location="src/main/java/org/spinachtree/gist"/>
+
+    <target name="clean">
+        <delete dir="target"/>
+    </target>
+
+    <target name="init">
+        <mkdir dir="target/main"/>
+    </target>
+
+  <target name="build" depends="clean,init,compile,jar,test"/>
+
+<!-- gist package......................................................................... -->
+	
+    <target name="compile" depends="parser">
+        <javac srcdir="${src}" destdir="target/main" includes="Gist.java"/>
+    </target>
+    <target name="parser" depends="parseOps">
+        <javac srcdir="${src}" destdir="target/main"
+		includes="Parser.java,Boot.java,Verify.java"/>
+    </target>
+    <target name="parseOps" depends="scan">
+        <javac srcdir="${src}" destdir="target/main"
+		includes="Chars.java,Rule.java,ParseOps.java"/>
+    </target>
+    <target name="scan">
+        <javac srcdir="${src}" destdir="target/main"
+		includes="Term.java,Scan.java,Vent.java,Library.java"/> 
+    </target>
+
+    <!-- build jar....................................................................... -->
+
+    <target name="jar" depends="compile">
+	<buildnumber file="build.num"/>
+        <jar destfile="gist.jar" basedir="target/main" >
+            <manifest>
+                <attribute name="Built-By" value="Peter Cashin, peter@spinachtree.org"/>
+                <attribute name="Main-Class" value="org.spinachtree.gist.Gist"/>
+                <attribute name="Implementation-Version" value="1.1.${build.number}"/>
+            </manifest>
+        </jar>
+    </target>
+
+<!-- test................................................................................... -->
+
+    <property name="junit" location="/Users/petercashin/Downloads/junit4.7/junit-4.7.jar"/>
+
+    <target name="test" depends="test.compile,test.run"/>
+
+    <target name="test.compile">
+        <delete dir="target/test"/>
+        <mkdir dir="target/test"/>
+        <javac srcdir="src/test/java" destdir="target/test"
+		classpath="gist.jar:${junit}" />
+    </target>
+
+    <target name="test.run" depends="test.compile">
+	<java classname="GistTest" classpath="target/test:gist.jar:${junit}" />
+    </target>
+
+    <target name="overruns" depends="test.compile">
+	<java classname="Overruns" classpath="target/test:gist.jar:${junit}" />
+    </target>
+
+
+
+<!-- javaDoc...................................................................... -->
+
+	<target name="doc">
+		<javadoc destdir="target/web/gist/java/"
+			sourcefiles="${src}/Gist.java,
+				${src}/Term.java,
+				${src}/Parser.java,
+				${src}/Rule.java,
+				${src}/Scan.java">
+		</javadoc>
+	</target>
+
+
+
+<!-- HTML docs.... tad html translator.....  -->
+
+	<target name="tad" depends="tad.compile,tad.gist,tad.java,tad.lazy" />
+
+	<target name="tad.compile">
+	        <mkdir dir="target/demo"/>
+		<javac srcdir="src/demo/java" destdir="target/demo"
+			classpath="gist.jar"
+			includes="Tad.java"/>
+	</target>
+
+	<target name="tad.gist">
+		<java classname="Tad" classpath="gist.jar:target/demo">
+			<arg value="doc/Gist.tad" />
+		</java>
+	</target>
+
+	<target name="tad.java">
+		<java classname="Tad" classpath="gist.jar:target/demo">
+			<arg value="doc/GistJava.tad" />
+		</java>
+	</target>
+
+	<target name="tad.lazy">
+		<java classname="Tad" classpath="gist.jar:target/demo">
+			<arg value="doc/LazyCashinParser.tad" />
+		</java>
+	</target>
+
+<!-- build web site .................................... -->
+
+	<target name="web" depends="tad.compile">
+	        <delete dir="target/web"/>
+	        <mkdir dir="target/web/gist"/>
+	        <mkdir dir="target/web/gist/java"/>
+
+	<!-- spinachtree.org/ -->
+	<java classname="Tad" classpath="gist.jar:target/demo">
+		<arg line="doc/home.tad target/web/index.html" />
+	</java>
+	<!-- spinachtree.org/gist/ -->
+	<java classname="Tad" classpath="gist.jar:target/demo">
+		<arg line="doc/home.tad target/web/gist/index.html" />
+	</java>
+	<java classname="Tad" classpath="gist.jar:target/demo">
+		<arg line="doc/Gist.tad target/web/gist/intro.html" />
+	</java>
+	<java classname="Tad" classpath="gist.jar:target/demo">
+		<arg line="doc/LazyCashinParser.tad target/web/gist/lazy.html" />
+	</java>
+	<copy file="doc/pragma.txt" tofile="target/web/gist/pragma.txt"/>
+	<!-- spinachtree.org/gist/java/ -->
+	<java classname="Tad" classpath="gist.jar:target/demo">
+		<arg line="doc/home.tad target/web/gist/java/index.html" />
+	</java>
+	<java classname="Tad" classpath="gist.jar:target/demo">
+		<arg line="doc/GistJava.tad target/web/gist/java/intro.html" />
+	</java>
+	<copy file="gist.jar" tofile="target/web/gist/java/gist.jar"/>
+	<!-- spinachtree.org/gist/java/api/ -->
+	<javadoc destdir="target/web/gist/java/api"
+		sourcefiles="${src}/Gist.java,
+			${src}/Term.java">
+	</javadoc>
+
+	</target>
+
+<!-- run demos...................................................................... -->
+
+    <target name="demo">
+        <delete dir="target/demo"/>
+        <mkdir dir="target/demo"/>
+        <javac srcdir="src/demo" destdir="target/demo" classpath="gist.jar" />
+    </target>
+
+    <property name="D" value="Arith"/> <!-- ant ex -DD=Another  to run any Another demo  -->
+
+    <target name="ex" depends="demo">
+	<java classname="${D}" classpath="gist.jar:target/demo" />
+    </target>
+
+    <target name="Arith" depends="demo">
+	<java classname="Arith" classpath="gist.jar:target/demo" />
+    </target>
+
+    <target name="lefty" depends="demo">
+	<java classname="Lefty" classpath="gist.jar:target/demo" />
+    </target>
+
+    <target name="twister" depends="demo">
+	<java classname="TwistedLR" classpath="gist.jar:target/demo" />
+    </target>
+
+    <target name="XXXX" depends="demo">
+	<java fork="true" classname="XXXX" 
+		classpath="gist.jar:target/demo:${xerces}/xercesImpl.jar:${xerces}/xml-apis.jar" />
+    </target>
+	<property name="xerces" location="/Users/petercashin/Downloads/xerces-2_9_1"/>
+
+    <target name="eg" depends="demo" >
+	<input message="Please enter class name:" addproperty="cls" />
+	<java fork="true" classname="${cls}" classpath="gist.jar:target/demo" />
+    </target>
+
+
+</project>
