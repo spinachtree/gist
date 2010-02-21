@@ -869,33 +869,24 @@ define
 		Extensible Markup Language: [http://en.wikipedia.org/wiki/XML]
 
 format
-	Title	<h1 class='title'>%text</h1>
-	Author	<h2 class='author'><i>%text</i></h2>
-	Date	<h3 class='date'><i>%text</i></h3>
-	Sect	<h2 class='sect'>%text</h2>
-	Sub1	<h3 class='sect'>%text</h3>
-	Appendix	<h2 class="appendix">Appendix: %text</h2>
+	Title	h1:prose
+	Author	h2:prose
+	Date	h3:prose
+	Sect	h2:prose
+	Sub1	h3:prose
+	Appendix	h2:prose
+	para	p:prose
+	eg	pre:text
 	
-	eg	<pre class='eg'>%text</pre>
-	
-	format	<pre class="format">%text</pre>
-	style	<pre class="style">%text</pre>
-
-	:_	<tt>%text</tt>
-	[:_]	<tt>%text</tt>
-	(:_)	<tt>%prose</tt>
-
-	~_	<em>%text</em>
-	(~_)	<em>%prose</em>
-
-	"_"	&ldquo;%prose&rdquo;
-	":_"	<tt>%text</tt>
-	
+prose
+	:_	tt:text
+	~_	em:prose
+	"_"	quote:prose
+xxx
 	[ref:_]		<undefined>[%text]</undefined>
 	[ref:?]		<a href="#%text">%text</a>
 	[http:_]	<a href="http:%text">http:%text</a>
 
-	(_)	(%prose)
 
 style
 	undefined { color:red; background-color:yellow; }

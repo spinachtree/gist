@@ -1,6 +1,6 @@
 <project name="Gist" default="build">
 
-  <property name="src" location="src/main/java/org/spinachtree/gist"/>
+	<property name="src" location="src/main/java/org/spinachtree/gist"/>
 
     <target name="clean">
         <delete dir="target"/>
@@ -45,7 +45,7 @@
 
 <!-- test................................................................................... -->
 
-    <property name="junit" location="/Users/petercashin/Downloads/junit4.7/junit-4.7.jar"/>
+    <property name="junit" location="/Users/peter/Downloads/junit-4.7.jar"/>
 
     <target name="test" depends="test.compile,test.run"/>
 
@@ -108,6 +108,35 @@
 			<arg value="doc/LazyCashinParser.tad" />
 		</java>
 	</target>
+
+<!-- MOT PROSE ... html translator...................................................................... -->
+
+	<property name="prose.home" value="/Users/peter/Scala/prose" />
+	<property name="scala.home" value="/Users/peter/Downloads/scala-2.7.5.final" />
+	<property name="scala-library.jar" value="${scala.home}/lib/scala-library.jar" />
+
+	<property name="gist.jar" location="/Users/peter/Java/gist/gist-1.1/gist.jar"/>
+
+	<path id="prose.cp">
+	  <pathelement location="${prose.home}/target"   />
+	  <pathelement location="${scala-library.jar}"   />
+	  <pathelement location="${gist.jar}"   />
+	</path>
+
+	<target name="mot.gist">
+		<java classname="Prose" classpathref="prose.cp" >
+		<arg value="${basedir}/doc/Gist.mot"/>
+		</java>
+	</target>
+
+	<target name="mot.tutorial">
+		<java classname="Prose" classpathref="prose.cp" >
+		<arg value="${basedir}/doc/tutorial.txt"/>
+		</java>
+	</target>
+
+
+
 
 <!-- build web site .................................... -->
 

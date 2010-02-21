@@ -16,7 +16,12 @@ The Gist parser returns the Term for the root of the parse tree, which will have
   text()  -- the string matched by this term.
   child() -- first child term, or null for a terminal leaf node.
   next()  -- next sibling term, or null.
+</pre>
 
+<p>
+To iterate over childeren terms an iterator method enables:
+<pre>
+	for (Term t: term) { ... process each child t ... }
 </pre>
 
 */
@@ -162,7 +167,18 @@ public class Term implements Iterable<Term> {
 	/**
 	Iterate over children terms.
 	<p>
-	To use: <code> for(Term x: term) { ... }</code></p>
+	Enables: <code> for(Term x: term) { ... }</code></p>
+	
+	<p>
+	In Scala you can use: <code> for (x <- term.iterator) ...</code></p>
+	<pre>
+	import scala.collection.JavaConversions._   // but this needs Scala 2.8
+	// in Scala 2.7 add this class and make the implicit conversion method available:
+	class ForEach[T](iter:java.util.Iterator[T]) {
+	    def foreach(f: T => Unit): Unit =  while(iter.hasNext) f(iter.next)
+	}
+	implicit def toForEach[T](iter:java.util.Iterator[T]):ForEach[T] = new ForEach[T](iter)
+	</pre>
 	*/
 	public Terms iterator() { return new Terms(this); }
 	
@@ -265,11 +281,11 @@ public class Term implements Iterable<Term> {
 	public String toString() {
 		StringBuilder sb=new StringBuilder();
 		if (isFault()) faultDisplay(sb);
-		else treeDisplay(sb,"\n","\t");
+		else treeDisplay(sb,"\n","\t",false);
 		return sb.toString();
 	}
 
-	void treeDisplay(StringBuilder s,String nl,String sp) {
+	void treeDisplay(StringBuilder s,String nl,String sp,boolean nxt) {
 		if (child==null) { // term
 			s.append(tag);
 			if (sot<=eot) {
@@ -279,14 +295,14 @@ public class Term implements Iterable<Term> {
 			}
 		} else if (child.next==null) { // singleton
 			s.append(tag+sp); // in-line
-			child.treeDisplay(s,nl,sp);
+			child.treeDisplay(s,nl,sp,true);
 		} else { // list of children...
 			s.append(tag+nl+sp);
-			child.treeDisplay(s,nl+sp,sp);
+			child.treeDisplay(s,nl+sp,sp,true);
 		}
-		if (next!=null) { // next sibling...
+		if (nxt && next!=null) { // next sibling...
 			s.append(nl);
-			next.treeDisplay(s,nl,sp);
+			next.treeDisplay(s,nl,sp,true);
 		}
 	}
 	

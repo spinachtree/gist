@@ -155,7 +155,7 @@ public class Gist {
 	}
 	
 	/**
-	assign a Vent subclass to handle events
+	only needed for an application that wants to handle events
 	@param vent   an application sub-class extending the Vent class
 	*/
 

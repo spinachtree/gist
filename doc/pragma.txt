@@ -1,6 +1,9 @@
 
--- These grammar rules are bundled with the Gist packages, to import them all use:
---    _ -> gist.pragma
+-- These grammar rules are bundled with the Gist package 
+-- to load this grammar use:
+--   Gist.load("gist.pragma", " <this file...> ")
+-- to import them all use:
+--    _ = gist.pragma._
 
 	TAB : 9  -- ASCII std char name
 	LF  : 10 -- line feed
@@ -28,8 +31,8 @@
 	Zx  : Zs/Zgap           -- all white space and gap separators    
 
 -- Common standard useage............
-	sp  : Zx  -- all white space, built-in: ~ : sp* 
-	nl  : CR (LF/NEL)? / LF / NEL / Zl -- $ : nl -- new-line, see XML 1.1
+	sp  : Zx  -- all white space, built-in: =~ uses sp* 
+	nl  : CR (LF/NEL)? / LF / NEL / Zl -- new-line, see XML 1.1
 	char: 8..10/13/0x20..7E/0x85/0xA0..D7FF/0xE000..FFFD/0x10000..10FFFF -- XML 1.1
 
 -- Posix standard ASCII char-set names......
@@ -38,20 +41,31 @@
 	alpha  : 'A'..'Z'/'a'..'z'
 	blank  : TAB/SP -- in-line white space
 	cntrl  : 0..31/127
-	digit  : '0'..'9' -- see Nd for other Unicodes
-	graph  : print-SP -- black chars
+	digit  : '0'..'9'
+	graph  : print~SP -- black chars
 	lower  : 'a'..'z'
-	print  : ascii-cntrl -- print, expanded to Unicode
-	punct  : ascii-cntrl-alnum -- !@#$%^&*()_+=-`~{}|[]\\:\;'<>?,./
+	print  : ascii~cntrl
+	punct  : ascii~cntrl~alnum -- !@#$%^&*()_+=-`~{}|[]\\:\;'<>?,./
 	space  : TAB/LF/VT/FF/CR/SP -- ascii white-space
 	upper  : 'A'..'Z' 
 	xdigit : '0'..'9'/'A'..'F'/'a'..'f'
 
--- Unicode char-sets........
+-- Unicode char-sets........ 
 	letter : nameStart  -- liberal, more than L_ Unicodes, see XML 1.1
 	white  : Zts -- in-line Separator-space chars
-	black  : char-cntrl-Zx -- graph, expanded to Unicode
-	text   : black/white -- print, expanded to Unicode, without gaps
+	black  : char~cntrl~Zx -- graph, expanded to Unicode
+	text   : black/white -- print expanded to Unicodes
+
+	Alnum  : Alpha/Digit -- alnum, expanded to Unicode
+	Alpha  : letter -- alpha, expanded to Unicode
+	Blank  : white -- blank, expanded to Unicode in-line white space
+	Digit  : Nd -- digit expanded to Unicode
+	Graph  : black -- graph, expanded to Unicode
+	Print  : black/white -- print, expanded to Unicode, without gaps
+	Space  : sp -- space expanded to Unicode white-space
+
+
+
 
 -- names and tokens..........
 	name      : nameStart nameChar*  -- XML 1.1 Name excluding ':'/'_' and '-'/'.'

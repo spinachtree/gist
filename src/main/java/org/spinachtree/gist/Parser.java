@@ -10,18 +10,19 @@ class Parser {
 	// Boot does not accept: comments, not !, multi-line rules, name.name refs, ..
 
 	public static final String gistGrammar = rules(
-		"Gist    = (xs (Rule/Import))* xs ",
-		"Rule    = name xs defn xs Body ",
+		"Gist    = (xs Rule)* xs ",
+	//	"Gist    = (xs (Rule/Import))* xs ",
+		"Rule    = name dots? xs defn til? xs Body ",
 		"Body    = Seq (xs '/' xs Seq)* ", 
 		"Seq     = (Op Factor Repeat?)+ ", 
-		"Op      = s ((','/minus) s)? ", 
+		"Op      = s ((',' / til ) s)? ", 
 		"Repeat  = '+' / '?' / '*' Ints? ", 
 		"Factor  = Ref/Literal/Group/Option/Many/Not/Peek/Prior/Event ", 
 		"Group   = '(' Exp ')' ", 
 		"Option  = '[' Exp ']' ", 
 		"Many    = '{' Exp '}' ",
 		"Exp     = (Body xs)* ",
-		"Not     = '!' s Factor / Ref s '-' s Ref ", 
+		"Not     = '!' s Factor ", 
 		"Peek    = '&' s Factor ", 
 		"Prior   = '@' s name ", 
 		"Event   = '<' name? s args? '>' ", 
@@ -30,10 +31,12 @@ class Parser {
 		"Code    = '0' ('x'/'X') Hexs / Ints ", 
 		"Ints    = int ('..' (int/anon))? ", 
 		"Hexs    = hex ('..' ('0'('x'/'X'))? hex)? ", 
-		"Ref     = name dots? / tilde / dollar / anon ", 
-		"Import  = (name/anon) xs '->' xs uri ",
-		"uri     = label ('#' name)? ",
-		"name    : alpha (alnum/'_')* ",
+		"Ref     = name ('.' name)* dots? ",
+	//	"label   = name ('.' (name/anon))+ ",
+	//	"Ref     = elide? name dots? / tilde / dollar / anon ", 
+	//	"Import  = (name/anon) xs '->' xs uri ",
+	//	"uri     = label ('#' name)? ",
+		"name    : (alpha/'_') (alnum/'_')* ",
 		"defn    : '=' / ':' ", 
 		"int     : digit+ ", 
 		"hex     : (digit/'a'..'f'/'A'..'F')+ ", 
@@ -41,17 +44,18 @@ class Parser {
 		"s       : blank* ", 
 		"xs      : (sp* ';'? comment?)* ", 
 		"comment : ('--' / '//' / '#') print* ",
-		"label   : (33/36..126)+ ", // uri (graph-'#'-'"')
+	//	"label   : (33/36..126)+ ", // uri (graph-'#'-'"')
 		"args    : (33..61/63..126)+ ", // Event (graph-'>')
 		"alnum   : alpha/digit ", 
 		"alpha   : 'a'..'z'/'A'..'Z' ", 
 		"digit   : '0'..'9' ", 
+	//	"elide   : '`' ", 
 		"dot     : '.' ", 
 		"dots    : '..' ", 
 		"colon   : ':' ", 
-		"minus   : '-' ", 
-		"tilde   : '~' ", 
-		"dollar  : '$' ", 
+	//	"minus   : '-' ", 
+		"til     : '~' ", 
+	//	"dollar  : '$' ", 
 		"anon    : '_' ", 
 		"blank   : 9/32 ", 
 		"print   : 9/32..126 ", 
@@ -88,7 +92,7 @@ class Parser {
 		return scan.root();
 	}
 
-	List<String> imports=new ArrayList<String>();
+	List<Parser> imports=new ArrayList<Parser>();
 
 	HashMap<String,Term> termMap=new HashMap<String,Term>(); // tag -> term in parse tree
 	HashMap<String,Rule> ruleMap=new HashMap<String,Rule>(); // name -> Rule
@@ -104,7 +108,68 @@ class Parser {
 	// -----  compile a parse tree from the gist grammar into parse operators... ----
 
 	void compile(Term tree) {
+		// Gist = (xs Rule)* xs
+		if (!tree.isTag("Gist")) { fault(tree.toString()); return; }
+		Term root=tree.child("Rule"); // start rule
+		start=root.text("name");
+		for (Term term: tree) {
+			if (term.tag()=="Rule") {
+				String name=term.text("name");
+				if (name.equals("_")) { // import...
+					importRule(term);
+				} else { // normal local rule name...
+					if (termMap.get(name)!=null)
+						fault("Duplicate rule definition: "+name);
+					termMap.put(name,term);
+				}
+			}
+		}
+		for (String name: termMap.keySet())
+			compileRule(name,null,null);
+	}
+	
+	void importRule(Term rule) {
+		// Body    = Seq (xs '/' xs Seq)* ", 
+		// Seq     = (Op Factor Repeat?)+ ", 
+		// Op      = s ((',' / til ) s)? ", 
+		// Repeat  = '+' / '?' / '*' Ints? ", 
+		// Factor  = Ref/Literal/Group/Option/Many/Not/Peek/Prior/Event ", 
+		Term body=rule.child("Body");
+		for (Term seq : body) {
+			for (Term factor : seq) {
+				if (factor.tag()=="Factor" && factor.has("Ref")) {
+					// Ref = name ('.' name)* dots? ",
+					Term ref=factor.child("Ref");
+					String grammar=ref.text("name");
+					Term t=ref.child().next();
+					while (t.next()!=null) {grammar+="."+t.text(); t=t.next(); }
+					String name=t.text();
+					Parser parser=getParser(grammar);
+					if (parser==null)
+						fault("Unknown grammar: "+grammar+"   Use: Gist.load(\""+grammar+"\",rules...) ");
+					else if (!name.equals("_"))
+						fault("Catch-all rule can't import a specific rule: "+grammar+"."+name+" Use: "+grammar+"._");
+					else imports.add(parser);
+				}
+			}
+		}
+	}
+	
+	Parser getParser(String grammar) {
+		Parser parser=library.get(grammar);
+		if (parser==null) {
+			String rules=Library.get(grammar);
+			if (rules!=null) parser=new Parser(rules);
+			library.put(grammar,parser);
+		}
+		return parser;
+	}
+	
+	
+
+/*	void compile(Term tree) {
 		// Gist = xs (xs Rule/Import)* xs
+		// Gist = (xs Rule)* xs
 		if (!tree.isTag("Gist")) { fault(tree.toString()); return; }
 		Term root=tree.child("Rule"); // start rule
 		start=root.text("name");
@@ -137,10 +202,10 @@ class Parser {
 		}
 		for (String name: termMap.keySet())
 			compileRule(name,null,null);
-	}
+	}*/
 
 	Rule compileRule(String name,Term ref,Rule host) {
-		// Rule = inset name sp defn sp Body
+		// Rule = inset name dots? sp defn sp Body
 		Rule rule=ruleMap.get(name);
 		if (rule==null) {
 			rule=new Rule(name); // undefined rule
@@ -149,47 +214,62 @@ class Parser {
 		if (rule.body!=null) return rule; // already compiled
 		Term term=termMap.get(name);
 		if (term==null) {
-			for (String label:imports) {
-				Parser parser=library.get(label);
-				if (parser!=null) {
-					rule=parser.rule(name);
-					if (rule!=null) { // import into this grammar
-						ruleMap.put(name,rule);
-						return rule;
-					}
-				}
+			/*for (String label:imports) {
+							Parser parser=library.get(label);
+							if (parser!=null) {
+								rule=parser.rule(name);
+								if (rule!=null) { // import into this grammar
+									ruleMap.put(name,rule);
+									return rule;
+								}
+							}
+						}*/
+			Rule target=null;
+			for (Parser parser:imports) {
+				target=parser.rule(name);
+				if (target!=null) break;
 			}
-			fault(host,ref,"undefined reference");
-			rule=new Rule(name); // empty, continue compile
+			if (target==null)
+				fault(host,ref,"undefined reference");
+			else {
+				rule=target;
+				ruleMap.put(name,rule);
+			}
+			//rule=new Rule(name); // empty, continue compile
 		} else if (term.tag=="Rule") {
-			//rule.elide=term.child("dots")!=null;
+			rule.elide=term.child("dots")!=null;
 			rule.term=term.has("defn",":");
 			rule.body=compileChoice(term.child("Body"),rule);
-		} else if (term.tag=="Import") { //  name -> uri
-			// Import  = (name/anon) xs '->' xs uri
-			// uri = label ('#' name)?
-			Term uri=term.child("uri");
-			Parser parser=library.get(uri.text("label"));
-			if (parser!=null) {
-				if (uri.child("name")==null || uri.text("name").equals(name)) {
-					Rule target=parser.rule(name);
-					if (target!=null) rule.body=target.body;
-				} else rule.body=parser.rule(uri.text("name")); // #name
-				if (rule.body==null) fault(rule,uri,"Rule could not be found...");
-			}	
 		}
 		return rule;
 	}
+	/*	} else if (term.tag=="Import") { //  name -> uri
+				// Import  = (name/anon) xs '->' xs uri
+				// uri = label ('#' name)?
+				Term uri=term.child("uri");
+				Parser parser=library.get(uri.text("label"));
+				if (parser!=null) {
+					if (uri.child("name")==null || uri.text("name").equals(name)) {
+						Rule target=parser.rule(name);
+						if (target!=null) rule.body=target.body;
+					} else rule.body=parser.rule(uri.text("name")); // #name
+					if (rule.body==null) fault(rule,uri,"Rule could not be found...");
+				}	
+			}
+			return rule;
+		}*/
 
 	ParseOp compileRef(Term ref, Rule host) {
-		// Ref   = name -- Boot
-		// Ref   = name dots? / tilde / dollar / anon
-                if (ref.has("tilde"))
-                        return new WhiteSpace(); // ~ => xs..*
-                if (ref.has("dollar"))
-                        return new NewLine(); // $ => XML1.1 eol
-                if (ref.has("anon"))
-                        return new Chars(new int[] {0,0x10FFFF});  // _ => any
+		// Ref = name -- Boot
+				// Ref   = name dots? / tilde / dollar / anon
+		// Ref = name ('.' name)* dots? ",
+/*		if (ref.has("tilde"))
+                return new WhiteSpace(); // ~ => xs..*
+        if (ref.has("dollar"))
+                return new NewLine(); // $ => XML1.1 eol
+        if (ref.has("anon"))
+                return new Chars(new int[] {0,0x10FFFF});  // _ => any*/
+		if (ref.child("name").next("name")!=null) return externalRef(ref,host);
 		boolean elide=ref.has("dots");
 		String name=ref.text("name");
 		Rule rule=ruleMap.get(name); // compileRule finds reference..;
@@ -199,8 +279,31 @@ class Parser {
 			if (elide || host.term || rule.elide) return rule.body;
 			return new Ref(name,elide,host,ruleMap,rule);
 		} // else rule may be undefined or in a ref loop
-                host.fixed=false; // safe, unknown resolution may be LR...
+        host.fixed=false; // safe, unknown resolution may be LR...
 		return new Ref(name,elide,host,ruleMap,null);
+	}
+
+	ParseOp externalRef(Term ref, Rule host) {
+		// Ref = name ('.' name)* dots? ",
+		boolean elide=ref.has("dots");
+		String grammar=ref.text("name");
+		Term t=ref.child().next();
+		while (t.next()!=null) {grammar+="."+t.text(); t=t.next(); }
+		String name=t.text();
+		if (name=="_") name=host.name(); // host = extern._
+		Parser parser=getParser(grammar);
+		if (parser==null) {
+			fault("Unknown grammar: "+grammar+"   Use: Gist.load(\""+grammar+"\",rules...) ");
+			return new Ref(name,elide,host,ruleMap,null); // empty, continue compile
+		}
+		Rule rule=parser.rule(name);
+		if (rule==null) {
+			fault(host,ref,"undefined external rule...");
+			return new Ref(name,elide,host,ruleMap,null); // empty, continue compile
+		}
+		if (!rule.fixed) host.fixed=false;
+		if (elide || host.term || rule.elide) return rule.body;
+		return new Ref(name,elide,host,ruleMap,rule);
 	}
 
 	ParseOp compileChoice(Term body,Rule host) {
@@ -231,25 +334,30 @@ class Parser {
 
 	ParseOp compileSeq(Term seq, Rule host) {
 		// Seq = (Op Factor Repeat?)+
-		// Op  = sp ((','/minus) xs)?
+		// Op  = sp ((','/til) xs)?
 		ArrayList<ParseOp> args=new ArrayList<ParseOp>();
 		Term term=seq.child();
 		while (term!=null) {
 			String tag=term.tag();
 			if (tag=="Factor")
-				term=addFactorRepeat(args,term,host);
-			else if (tag=="Op") {
-				if (term.has("minus")) { // w-x => !x w
-					int i=args.size();
-					if (i==0)
-						return fault(host,seq,"unexpected unary -x: w-x => !x w ...");
-					ParseOp w=args.remove(--i);
-					term=addFactorRepeat(args,term.next(),host); // x 
-					args.set(i,new Negate(args.get(i))); // !x
-					args.add(w); // !x w
-				} else term=term.next();
-			} else if (tag=="sp") term=term.next(); // Boot
-			else throw new UnsupportedOperationException("Seq "+term);
+				args.add(compileFactor(term,host));
+			else if (tag=="Repeat") {
+				int k=args.size()-1;
+				args.set(k,compileRepeat(args.get(k),term));
+			} else if (tag=="Op" && term.has("til")) { // x-y => (!y x)
+				int k=args.size()-1;
+				if (k<0) return fault(host,seq,"unexpected unary -y: x-y => !y x ...");
+				term=term.next(); // Op Factor
+				ParseOp x=args.get(k); // x-y
+				ParseOp y=compileFactor(term,host);
+				ParseOp z; // z = (x-y) / (!y x)
+				if (x instanceof Chars && y instanceof Chars)
+					z=((Chars)x).exclude((Chars)y);
+				else
+					z=new Seq(new ParseOp[] {new Negate(y),x});
+				args.set(k,z);
+			}			
+			term=term.next();
 		}
 		for (int i=0;i<args.size()-1;i++) { // reduce !x y ....
 			ParseOp x=args.get(i);
@@ -270,21 +378,11 @@ class Parser {
 		if (args.size()==1) return args.get(0);
 		for (int i=0; i<args.size()-1; i++) {
 			if (Verify.overruns(args.get(i),args.get(i+1))) { // x* y  => fault if y>x
+				//System.out.println("overrun? "+args);
 				return fault(host,seq,"overrun: will fail after greedy one-match repeat...");
 			}
 		}
 		return new Seq(args.toArray(new ParseOp[0]));
-	}
-
-	Term addFactorRepeat(ArrayList<ParseOp> args,Term term,Rule host) {
-		ParseOp factor=compileFactor(term,host);
-		term=term.next();
-		if (term!=null && term.tag()=="Repeat") {
-			factor=compileRepeat(factor,term);
-			term=term.next();
-		}
-		args.add(factor);
-		return term;
 	}
 
 	boolean isNegateChar(ParseOp x) { // !'x'

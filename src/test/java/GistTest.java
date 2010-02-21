@@ -135,10 +135,10 @@ public class GistTest {
 		assertTrue(am.isTag("Exp"));
 	}
 
-	@Test
+/*	@Test
 	public void importTest() {
 		String importTest=
-		"	Imp   = letter Nd (letter/digit)*    \n"+
+		"	Imp   = letter Nd (letter/digit)* \n"+
 		"	digit ->  gist.pragma#Nd        \n"+
 		"	_     ->  gist.pragma	\n";
 		
@@ -146,7 +146,19 @@ public class GistTest {
 		Term t=imp.parse("x42");
 		//System.out.println(t);
 		assertTrue(t.isTag("Imp"));
-	}
+	}*/
 	
+	@Test
+	public void importTest() {
+		String importTest=
+		"	Imp   = letter Nd (letter/digit)* \n"+
+		"	digit =  gist.pragma.Nd        \n"+
+		"	_     :  gist.pragma._         \n";
+
+		Gist imp=new Gist(importTest);
+		Term t=imp.parse("x42");
+		//System.out.println(t);
+		assertTrue(t.isTag("Imp"));
+	}
 	
 }

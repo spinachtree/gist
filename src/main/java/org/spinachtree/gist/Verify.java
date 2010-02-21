@@ -52,7 +52,7 @@ class Verify {
 	
 	// if a overruns b, then a* b will fail...
 	
-	// current implementation will only catch a few obvious cases, but everything helps...
+	// current implementation will only catch some cases, but everything helps...
 	
 	static boolean overruns(ParseOp a, ParseOp b) {
 		if (a instanceof Repeat) {
@@ -89,8 +89,18 @@ class Verify {
 		}
 		if (x instanceof Seq) {
 			Seq seq=(Seq)x;
-			return firstChars(seq.args[0]);
-		}
+			ParseOp arg=seq.args[0];
+			if (vacant(arg)) return null; // give up
+			return firstChars(arg);
+/*			Chars cs=new Chars(new int[0],0);
+			for (ParseOp arg: seq.args) {
+				Chars fc=firstChars(arg);
+				if (fc==null) return null; // give up
+				cs.union(fc);
+				if (!vacant(arg)) return cs;
+			}
+			return null; // can't tell
+*/		}
 		if (x instanceof Select) {
 			Select sel=(Select)x;
 			Chars cs=null;

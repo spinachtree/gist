@@ -20,7 +20,7 @@ class Library {
 	// define built-in grammars ........................................
 	
         static { 
-		load("gist.pragma", // default names: _ -> gist.pragma
+        load("gist.pragma", // default names: _ -> gist.pragma
                 "TAB : 9  -- ASCII std char name ",
                 "LF  : 10 -- line feed ",
                 "VT  : 11 -- vertical tab ",
@@ -40,27 +40,27 @@ class Library {
                 "Zp  : 0x2029 -- Unicode Separator-paragraph ",
                 "Zs  : SP/0xa0/0x1680/0x180e/0x2000..200A/0x202F/0x205F/0x3000     ",
                 "-- Extended Unicode Separators, pseudo categories................ ",
-                "Zts : TAB/Zs            -- in-line blank space.................... ",
+                "Zts : TAB/Zs            -- in-line blank space................... ",
                 "Zeol: LF/CR/NEL/Zl      -- all line end chars, but see nl...      ",
                 "Zgap: TAB/VT/FF/Zeol/Zp -- generic gap: eol plus field separators ",
                 "Zx  : Zs/Zgap           -- all white space and gap separators     ",
 
                 "-- Common standard useage............ ",
                 "sp  : Zx  -- all white space, built-in: ~ : sp*  ",
-                "nl  : CR (LF/NEL)? / LF / NEL / Zl -- $ : nl -- new-line, see XML 1.1 ",
-		"char: 8..10/13/0x20..7E/0x85/0xA0..D7FF/0xE000..FDCF/0xFDC0..FFFD/0x10000..10FFFD ",
-		
+                "nl  : CR (LF/NEL)? / LF / NEL / Zl -- new-line, see XML 1.1 ",
+                "char: 8..10/13/0x20..7E/0x85/0xA0..D7FF/0xE000..FDCF/0xFDC0..FFFD/0x10000..10FFFD ",
+
                 "-- Posix standard ASCII char-set names...... ",
                 "ascii  : 0..127 ",
                 "alnum  : alpha/digit ",
                 "alpha  : 'A'..'Z'/'a'..'z' ",
                 "blank  : TAB/SP -- in-line white space ",
                 "cntrl  : 0..31/127 ",
-                "digit  : '0'..'9' -- see Nd for other Unicodes ",
-                "graph  : print-SP -- black chars ",
+                "digit  : '0'..'9' ",
+                "graph  : print~SP -- black chars ",
                 "lower  : 'a'..'z' ",
-                "print  : ascii-cntrl -- print, expanded to Unicode ",
-                "punct  : ascii-cntrl-alnum -- !@#$%^&*()_+=-`~{}|[]\\:\";'<>?,./ ",
+                "print  : ascii~cntrl ",
+                "punct  : ascii~cntrl~alnum -- !@#$%^&*()_+=-`~{}|[]\\:\";'<>?,./ ",
                 "space  : TAB/LF/VT/FF/CR/SP -- ascii white-space ",
                 "upper  : 'A'..'Z' ", 
                 "xdigit : '0'..'9'/'A'..'F'/'a'..'f' ",
@@ -68,9 +68,17 @@ class Library {
                 "-- Unicode char-sets........ ",
                 "letter : nameStart  -- liberal, more than L_ Unicodes, see XML 1.1 ",
                 "white  : Zts -- in-line Separator-space chars ",
-                "black  : char-cntrl-Zx -- graph, expanded to Unicode ",
-                "text   : black/white -- print, expanded to Unicode, without gaps ",
+                "black  : char~cntrl~Zx -- graph, expanded to Unicode ",
+                "text   : black/white -- print, expanded to Unicode ",
 
+                "Alnum  : Alpha/Digit -- alnum, expanded to Unicode ",
+                "Alpha  : letter -- alpha, expanded to Unicode ",
+                "Blank  : white -- blank, expanded to Unicode in-line white space ",
+                "Digit  : Nd -- digit expanded to Unicode ",
+                "Graph  : black -- graph, expanded to Unicode ",
+                "Print  : black/white -- print, expanded to Unicode ",
+                "Space  : sp -- space expanded to Unicode white-space ",
+ 
                 "-- names and tokens.......... ",
                 "name      : nameStart nameChar*  -- XML 1.1 Name excluding ':'/'_' and '-'/'.' ",
                 "token     : (nameChar/':'/'_'/'-'/'.')+  -- same as XML 1.1 Nmtoken ",

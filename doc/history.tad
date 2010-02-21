@@ -1,0 +1,118 @@
+title	The Story of Gist.
+
+sect	Introduction
+
+This note is the story of what Gist is all about and how it came to be. If you just want to be able to use Gist then skip this note and jump across to: http://spinachtree.org/gist/intro.html
+
+Traditional grammar rules are concise and powerful, so they should be fun to use in a software application, but they almost always end up on the side-lines. Even when they play a central role in the formal specifications they get left behind in those documents. All too often different software products that start with the same grammar specification end up with slightly different interpretations that create annoying quirks and defects.
+
+The grammar rules look like software instructions, so why can't we just automate them? There are text books full of various techniques to implement a parser for a grammar, but it turns out to be harder than it looks to fully automate a grammar. Good parser generator tools are available, but they are heavy duty tools that are mostly used by specialist designers for a major applications such as a new programming language compiler. Most small grammar specifications do not seem to warrant these heavy duty tools, and they look easy enough to implement directly in an ad-hoc program. But this inevitably leads to the annoying quirks and defects.
+
+Since the 1970s grammar rules have been used for many different specifications, such as the IETF Internet standards. Many of these grammars can be expressed with simplified grammar rules that can be automated. This makes a grammar easy to use in application programming, it is fun, and it was the starting point for the Gist project. During the development of new specifications automated grammar rules can be easily modified and tested.
+
+Grammar rules are very clear and concise, but they can be tricky, they often match subtle variations that may or may not be intended, and they can contain mistakes that are not always easy to spot. When the grammar rules can be directly executed the whole process becomes much easier. Examples of acceptable and unacceptable input strings can be immediately parsed, and iterative experiments and building a test suite are a lot more enjoyable than slow and painstaking proof reading.     
+
+For many years I had assumed that light-weight parser generator tools would come into common use, and maybe programming languages would evolve to support grammar rules directly. But this has not yet happened, although regular expressions are now very common, and most modern programming languages support them.
+
+Perhaps part of the problem is that grammar rules have been too successful! They have a well established formal theory, and the design of parsers is a standard part of computer science text books. A simpler form of grammar might work well in practice, but it limits the languages that a grammar can express, and that does not fit with the established theory.
+
+I have implemented simplified grammar rules in several different programming languages over the last ten years. My simplifications didn't fit into the established theory, but they always worked perfectly well for the applications I was interested in. 
+
+The key concept was to interpret grammar rules as "one-match" pattern matching expressions. In particular, a rule can match a string in only one way, even if it contains choices that allow it to match in more than one way. Traditional grammar rules are "multi-match", and they usually match the longest string first, but they can back-track later to match optional shorter prefix choices.
+
+At first it seemed that "one-match" rules would be too simple, and they would cripple the expressive power of the grammar. But that just didn't seem to happen, in practice grammars didn't need "multi-match" rules, and when a grammar did employ a multi-match rule it could be re-formulated with one-match rules. Grammars that can not be expressed with "one-match" rules do exist, but they always seem to be contrived text-book examples.  
+
+On the other hand a traditional context-free grammar allows "multi-match" options that can be unexpected, and just plain wrong. For example, a number may be specified to match one or more digit. The intent is to match the longest string of digits as a number, but a traditional grammar rule can also match a shorter prefix number. This allows the trailing digits to be matched by some other rule, so matching digits as a number relies on the absence of any such rule.
+
+Not only is there no way to express the fact that ~only the longest match is valid, but an automated parser has to work hard to figure out that shorter matches will never work. A simple parser may need to back-track and try shorter and shorted prefixes just incase a subsequent rule will start to match. Building a fast parser gets complicated. 
+
+Multi-match rules allow a traditional grammar to specify an ambiguous language, which allows more than one way for a successful parse to match an input string. A natural human language can be ambiguous, but a computer language is designed to be unambiguous, and any lingering ambiguity is usually considered a defect. Grammar rules that allow ambiguous languages to be specified are too general, they are simply not required for the majority of computer applications. 
+
+
+sect	Parser Expression Grammars
+
+In 2004 Bryan Ford published papers on his PEG (Parser Expression Grammar) work. This was good news, a formal basis for a simpler grammar with one-match rules. It turns out that there are languages that a PEG can express but a traditional CFG (Context Free Grammar) can not, but others that a CFG can express but a PEG can not. But unambiguous CFG languages can almost always be specified with a simpler PEG.
+
+A PEG is not only simpler to parse it also enables an efficient pack-rat parser which can parse in linear time. This work has revived interest in new work on parser design, an area that had for many years been considered exhausted.  
+
+The PEG rules are "one-match" rules, since they are based on a sequential first match choice, "x / y", rather than the more general CFG choice. In Gist I had been using a slightly different choice operator that matched the longest successful match, "x | y" (as a one-match rule).
+
+The longest match has the advantage that the choices can be expressed in any order, as in a traditional grammar. The first sequential choice is more like a programming language and the order does matter, but it can be more efficient since after the first match any subsequent choices can be ignored.  
+
+The first sequential choice can be expressed as a longest match choice with a negation:
+
+eg
+	x / y	=>	x | !x y
+
+If only one choice operator is desired it is debatable which one is best. The longest match is a little more general and may be easier to use, but the first choice operator seems to work well in practice. It can also be argued that using the "x | y" syntax for the longest match is confusing since it is not quite the same as the traditional "multi-match" operator. I have tried one and the other and both, and I can't see much in it.
+
+The problem for people who are familiar with multi-choice rules is more likely to be with the repeat operators than with the choice operator itself. The * repeat operator in a one-match grammar will match as many times as possible, but it will not back-off to allow trailing element(s) to be matched by another term. Any rules that assume a repeat operator will back-off must be re-formulated in some other way, which is always possible, and often improves the grammar.
+
+sect	Grammar Specifications as Programs
+
+My objective for Gist was to provide a grammar language with a universal parser so that a grammar specification could be directly automated in an application program. Using one-match grammar rules that can be simply and efficiently parsed is a big step forward, but there are several other problems:
+
+*	There is often a significant difference between a specification and an implementation. A specification must be precise, and free of any specific implementation details, and this often means it will have a declarative reading, but not necessarily a procedural reading that can be automated. For example, a sorted list can be easily specified, but that does not mean it can be easily automated with a universal sorting algorithm.
+
+*	Although the Gist grammar language can be defined independent of a programming language, a universal parser to automate it must be implemented in some particular programming language. Also application software requires a programming language interface to be able to use a universal Gist parser.
+
+*	Traditional grammar rules do not specify a specific abstract parse tree structure, different parsers can resolve the grammar rules into different parse tree structures. But to automate a grammar the rules must implicitly specify a specific parse tree structure. One-match rules make this a lot easier, but the exact way that the grammar rules generate parse tree nodes must be explicitly expressed in the grammar.
+
+*	When a parser is hand crafted, or built with a parser generator tool, it is built for a specific grammar, and the parse tree and application interface can be tailored to the specific grammar's application and implementation requirements. In particular an application may integrate semantic methods into the grammar rules, and these methods are programming language specific. A universal parser must provide a single simple interface that is acceptable to any application. 
+
+*	There are two styles of parser design, one that processes the complete input string and generates a parse tree for the application, and another that generates a stream of events as the parser matches elements in the input string. The full parse tree style is usually simpler for an application to deal with, but an event style may be needed for processing a very large input string or a continuous input stream. A Gist grammar that is automated needs to allow either style.
+
+*	In practice formal grammar specifications are sometimes not quite complete, and a natural language specification is used to cover the holes in the grammar. For example, the specification may require a feature that can not be expressed in a context-free grammar, or maybe it is just too awkward to express. For an automated grammar to be used in practice there needs to be some way to express arbitrary features, and to allow an escape into a programming language implementation if necessary. 
+
+*	If the performance of an automated grammar implementation can not compete with ad-hoc program implementations of individual grammars then it has limited practical value. 
+
+Despite all this, many grammar specifications are can be easily automated, and they work very well in practice. Grammar rules are so close to a programming language that it just cries out for way to close the gap.
+
+
+sect	Negation
+
+
+sect	Grammar Rule Syntax
+
+
+sect	The Parse Tree
+
+sect	Specifications vs Implementation
+
+
+sect	Parser Implementation
+-- DOm or event model...
+
+
+---
+Regular expressions are less powerful than grammar rules, but they are easier to automate, and most programming languages now support regular expressions. Unfortunately the common syntax for regular expressions leaves a lot to be desired, but they are so useful that the cryptic mess of back-slash symbols has become accepted practice.
+
+
+
+
+
+
+
+sect	History of Grammar Rules
+
+The IETF started using ABNF grammar rules in the 1970s, and the ABNF standard RFC 5324 published in 2008 remains remarkably similar to the original usage.
+
+ of grammar rules in specifications became quite common for a wide variety of specifications was well established. 
+
+
+
+
+Grammar specifications are simple and powerful, the fundamentals were established back in the 1960s. But not much has changed, and although they remain an part of many formal standard specification documents, but not as an effective tool for most practical software applications.
+
+Its not that there are So what is wrong? Whay are they
+
+ 
+
+Gist evolved over 20 years or more.  in response to the use of grammar specifications.  
+
+The first version of Gist was implemented around 2000, 
+
+
+sect	Implementations
+
+Over the last 10 years or more Gist has been implemented in many different forms and in several different programming languages.
