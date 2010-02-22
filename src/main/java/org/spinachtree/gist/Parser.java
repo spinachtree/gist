@@ -32,10 +32,6 @@ class Parser {
 		"Ints    = int ('..' (int/anon))? ", 
 		"Hexs    = hex ('..' ('0'('x'/'X'))? hex)? ", 
 		"Ref     = name ('.' name)* dots? ",
-	//	"label   = name ('.' (name/anon))+ ",
-	//	"Ref     = elide? name dots? / tilde / dollar / anon ", 
-	//	"Import  = (name/anon) xs '->' xs uri ",
-	//	"uri     = label ('#' name)? ",
 		"name    : (alpha/'_') (alnum/'_')* ",
 		"defn    : '=' / ':' ", 
 		"int     : digit+ ", 
@@ -44,18 +40,14 @@ class Parser {
 		"s       : blank* ", 
 		"xs      : (sp* ';'? comment?)* ", 
 		"comment : ('--' / '//' / '#') print* ",
-	//	"label   : (33/36..126)+ ", // uri (graph-'#'-'"')
 		"args    : (33..61/63..126)+ ", // Event (graph-'>')
 		"alnum   : alpha/digit ", 
 		"alpha   : 'a'..'z'/'A'..'Z' ", 
 		"digit   : '0'..'9' ", 
-	//	"elide   : '`' ", 
 		"dot     : '.' ", 
 		"dots    : '..' ", 
 		"colon   : ':' ", 
-	//	"minus   : '-' ", 
 		"til     : '~' ", 
-	//	"dollar  : '$' ", 
 		"anon    : '_' ", 
 		"blank   : 9/32 ", 
 		"print   : 9/32..126 ", 
@@ -165,47 +157,8 @@ class Parser {
 		return parser;
 	}
 	
-	
-
-/*	void compile(Term tree) {
-		// Gist = xs (xs Rule/Import)* xs
-		// Gist = (xs Rule)* xs
-		if (!tree.isTag("Gist")) { fault(tree.toString()); return; }
-		Term root=tree.child("Rule"); // start rule
-		start=root.text("name");
-		for (Term term: tree) {
-			String tag=term.tag();
-			if (tag=="Rule" || tag=="Import") {
-				if (term.child("name")!=null) {
-					String name=term.text("name");
-					if (termMap.get(name)!=null)
-						fault("Duplicate rule definition: "+name);
-					termMap.put(name,term);
-				}
-			}
-			if (tag=="Import") { // name/anon -> uri
-				Term uri=term.child("uri");
-				if (term.has("anon") && uri.has("name")) // _ -> label#name
-					fault("Drop #"+uri.text("name")+" from: "+term.text());
-				String label=uri.text("label");
-				imports.add(label);
-			}
-		}
-		for (String label:imports) {
-			Parser parser=library.get(label);
-			if (parser==null) {
-				String grammar=Library.get(label);
-				if (grammar!=null) parser=new Parser(grammar);
-				library.put(label,parser);
-			}
-			if (parser==null) fault("Can't find grammar: "+label);
-		}
-		for (String name: termMap.keySet())
-			compileRule(name,null,null);
-	}*/
-
 	Rule compileRule(String name,Term ref,Rule host) {
-		// Rule = inset name dots? sp defn sp Body
+		// Rule = inset name dots? sp defn til? sp Body
 		Rule rule=ruleMap.get(name);
 		if (rule==null) {
 			rule=new Rule(name); // undefined rule
@@ -214,16 +167,6 @@ class Parser {
 		if (rule.body!=null) return rule; // already compiled
 		Term term=termMap.get(name);
 		if (term==null) {
-			/*for (String label:imports) {
-							Parser parser=library.get(label);
-							if (parser!=null) {
-								rule=parser.rule(name);
-								if (rule!=null) { // import into this grammar
-									ruleMap.put(name,rule);
-									return rule;
-								}
-							}
-						}*/
 			Rule target=null;
 			for (Parser parser:imports) {
 				target=parser.rule(name);
@@ -235,40 +178,18 @@ class Parser {
 				rule=target;
 				ruleMap.put(name,rule);
 			}
-			//rule=new Rule(name); // empty, continue compile
 		} else if (term.tag=="Rule") {
 			rule.elide=term.child("dots")!=null;
 			rule.term=term.has("defn",":");
+			rule.spaced=term.has("til");
 			rule.body=compileChoice(term.child("Body"),rule);
 		}
 		return rule;
 	}
-	/*	} else if (term.tag=="Import") { //  name -> uri
-				// Import  = (name/anon) xs '->' xs uri
-				// uri = label ('#' name)?
-				Term uri=term.child("uri");
-				Parser parser=library.get(uri.text("label"));
-				if (parser!=null) {
-					if (uri.child("name")==null || uri.text("name").equals(name)) {
-						Rule target=parser.rule(name);
-						if (target!=null) rule.body=target.body;
-					} else rule.body=parser.rule(uri.text("name")); // #name
-					if (rule.body==null) fault(rule,uri,"Rule could not be found...");
-				}	
-			}
-			return rule;
-		}*/
 
 	ParseOp compileRef(Term ref, Rule host) {
 		// Ref = name -- Boot
-				// Ref   = name dots? / tilde / dollar / anon
 		// Ref = name ('.' name)* dots? ",
-/*		if (ref.has("tilde"))
-                return new WhiteSpace(); // ~ => xs..*
-        if (ref.has("dollar"))
-                return new NewLine(); // $ => XML1.1 eol
-        if (ref.has("anon"))
-                return new Chars(new int[] {0,0x10FFFF});  // _ => any*/
 		if (ref.child("name").next("name")!=null) return externalRef(ref,host);
 		boolean elide=ref.has("dots");
 		String name=ref.text("name");

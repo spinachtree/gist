@@ -147,6 +147,19 @@ public class GistTest {
 		//System.out.println(t);
 		assertTrue(t.isTag("Imp"));
 	}*/
+
+	@Test
+	public void spacedTest() {
+		String spacedTest=
+		"	Ints  =~ int*       \n"+
+		"	int   :  '0'..'9'+   \n";
+
+		Gist imp=new Gist(spacedTest);
+		Term t=imp.parse("  12	34   56");
+		//System.out.println(t);
+		assertTrue(t.isTag("Ints"));
+	}
+	
 	
 	@Test
 	public void importTest() {

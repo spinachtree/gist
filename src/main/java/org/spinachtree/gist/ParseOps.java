@@ -266,14 +266,17 @@ class NewLine extends ParseOp {
 
 	boolean parse(Scan scan) {
 		int i=scan.pos;
-		int ch=scan.input.codePointAt(i); 
+		//int ch=scan.input.codePointAt(i); 
+		int ch=scan.codePoint(); 
 		if (ch==10 || ch==0x85 || ch==0x2028) { 
 			scan.pos+=1;
 			return true;
 		}
 		if (ch==13) {
-			scan.pos+=1;
-			ch=scan.input.codePointAt(i+1);
+			//scan.pos+=1;
+			//ch=scan.input.codePointAt(i+1);
+			scan.pos+=1; // OK for UTF8 etc
+			ch=scan.codePoint();
 			if (ch==10 || ch==0x85) scan.pos+=1;
 			return true;
 		}

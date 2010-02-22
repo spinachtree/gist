@@ -57,6 +57,8 @@ public class Scan {
 	Term seed;  // Terms build out from seed.next
 	Term tip;   // last output term
 	
+	int skip=0;
+	
 	Vent vent=null; // event interface
 	
 	Map<Rule,Memo> memos=new HashMap<Rule,Memo>();
@@ -72,6 +74,10 @@ public class Scan {
 	public int codePoint() {
 		if (pos>=eot) return -1;
 		ch=input.codePointAt(pos);
+		if (ch<33 && skip>0) {
+			advance();
+			return codePoint();
+		}
 		return ch;
 	}
 

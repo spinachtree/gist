@@ -25,7 +25,7 @@ class Rule extends ParseOp {
 	}
 
 	String name;
-	boolean term, elide, fixed;
+	boolean term, elide, spaced, fixed;
 	ParseOp body;
 	
 	Rule copy() { return new Rule(name,body,term,elide,fixed); }
@@ -48,12 +48,15 @@ class Rule extends ParseOp {
 		memo.start=i;
 		memo.result=null;
 		Term t=scan.tip;
+		if (spaced) scan.skip++;
 		if (body.parse(scan)) {
+			if (spaced) scan.skip--;
 			memo.start=i;
 			memo.result=scan.newTerm(name,i,t);
 			if (memo.loop) return leftParse(scan,memo,i,t);
 			return true;
 		}
+		if (spaced) scan.skip--;
 		memo.start=i;
 		memo.result=Scan.FAIL;
 		return false;
