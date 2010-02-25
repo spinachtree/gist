@@ -157,20 +157,20 @@ eg
 
 This parse tree is shown in a compact format that allows a singleton child to appear on the same line a its parent. Sibling children are aligned in a column with the same inset, which shows the nesting level, but extra inset levels are not required after singleton parents. The tree structure should be apparent after a little study. Larger parse trees are much easier to read with this format.
 
-The next example uses left recursion to express left association. This example introduces the rule notation "=~" as a convenient way to skip white space characters:
+The next example uses left recursion to express left association:
 
 eg
-	Expr  =~ Exp
+	Expr  = Exp
 	Exp   = Add / Sub / Item
-	Add   =~ Exp '+' Item
-	Sub   =~ Exp '-' Item
+	Add   = Exp '+' Item
+	Sub   = Exp '-' Item
 	Item  = Mul / Div / Val
-	Mul   =~ Item '*' Val
-	Div   =~ Item '/' Val
-	Val   =~ Int / '(' Exp ')'
+	Mul   = Item '*' Val
+	Div   = Item '/' Val
+	Val   = Int / '(' Exp ')'
 	Int   : '0'..'9'+
 
-The parse tree for :[1 + 3*(5 - 6/3 + 2)] is:
+The parse tree for :[1+3*(5-6/3+2)] is:
 
 eg
 	Expr
@@ -200,15 +200,15 @@ eg
 
 The list of values is realized in most languages as an array, vector, list, or sequence. The map of name/value pairs is realized in various languages as an object, record, struct, dictionary, hash table, keyed list, or associative array. 
 
-The Gist grammar follows directly from the #JSON specification:
+The Gist grammar follows directly from the #JSON specification. Json ignores irrelevant white space, and the ":[~]" symbol is a convenient way to match any white space characters:
 
 eg
-	json   =~ (object / array) ~              
-	object =~ '{' pairs? '}'                
-	pairs  =~ pair (',' pair)*             
-	pair   =~ string ':' val                
-	array  =~ '[' vals? ']'                 
-	vals   =~ val (',' val)*                 
+	json   = (object / array) ~              
+	object = ~ '{' ~ pairs? ~ '}'                
+	pairs  = pair (~ ',' ~ pair)*             
+	pair   = string ~ ':' ~ val                
+	array  = ~ '[' ~ vals? ~ ']'                 
+	vals   = val (~ ',' ~ val)*                 
 	val    = object/array/string/number        
 	         /true/false/null                  
 	string = quot (chs/esc)* quot            
@@ -230,9 +230,9 @@ eg
 	fs..   : 47   -- forward-slash             
 	quot.. : 34   -- double-quote              
 	chs    : char+                             
-	char   : 0x20..10ffff~quot~bs          
+	char   : 0x20..10ffff-quot-bs          
 
-The last rule for "char" uses a "~" to exclude the "quote" and "bs" characters from the wide range of Unicode characters that Json accepts in character strings. This is a convenient syntax for negation, it is discussed more fully later. The ellipsis notation, as in :[bs..], defines a rule that will not appear in the parse tree, just as if it was a quoted literal character.
+The last rule for "char" uses a "-" to exclude the "quote" and "bs" characters from the wide range of Unicode characters that Json accepts in character strings. This is a convenient syntax for negation, it is discussed more fully later. The ellipsis notation, as in :[bs..], defines a rule that will not appear in the parse tree, just as if it was a quoted literal character.
 
 Here is a JSON example (modified from #[RFC 4627]):
 
@@ -320,6 +320,7 @@ A more complete rule for white-space characters includes both these rules plus o
 eg
 	sp : space/Zs/0x85/0x2028..2089
 
+For convenience the :[~] symbol is predefined as :[sp*] to match any white space characters.
 
 Sub1	New Line Codes
 
@@ -335,10 +336,12 @@ A new-line rule to match all these common conventions can be defined as:
 eg
 	nl : 13 (10/0x85)? / 10 / 0x85 / 0x2028
 
+For convenience the :[$] symbol is predefined as :[nl] to match a line break.
+
 
 Sub1	Any Character
 
-A match for any character is sometimes convenient, but it can be dangerous since it will match control characters, permanently undefined characters, and more. An XML document can contain almost any Unicode character, but not everything. A reasonable set of characters compatible with XML 1.1 can be defined as:
+The symbol ":[_]" is defined to match any character code, and this can sometimes be useful, but is best avoided since it will match control code characters, permanently undefined characters, surrogate pair characters, and more. An XML document allows almost any Unicode character, but that is not the same as absolutely anything. A reasonable set of characters compatible with XML 1.1 can be defined as:
 
 eg
 	char: 8..10/13/0x20..7E/0x85/0xA0..D7FF/0xE000..FDCF/0xFDC0..FFFD/0x10000..10FFFD
@@ -348,17 +351,17 @@ Replicating this sort of definition is cumbersome and tedious, a better way is t
 
 Sect	External References
 
-Gist can define a rule via a reference to a separate grammar. This enables a grammar to be composed in modules, and supports the use of common standard rules.
+Gist can refer to rules defined in an external grammar. This enables a grammar to be composed in modules, and supports the use of common standard rules.
 
-For example, a :digit rule can refer to the :Nd, Numeric-digit defined in a :[Unicode] grammar:
+An external reference starts with a grammar name then a dot prefix in front of the rule name (as in fully qualified Java names). For example, a :digit rule can refer to the :Nd, Numeric-digit defined in a :[Unicode] grammar:
 
 eg
 	digit = Unicode.Nd
 
-References to the same name external rule may use a "catch-all" rule to import another grammar:
+References with the same external name may use a "catch-all" rule to "import" another grammar:
 
 eg
-	_ = Unicode._
+	_ = Unicode._     -- or:  _ = Unicode
 
 Rule names must be unique within a grammar, but external references can import different rules from different grammars that have the same rule name. The parse tree nodes use rule names, but they can be distinguished by their path names in the parse tree. Grammars are named in a separate name space, and these names do not appear in the parse tree.
 
@@ -376,10 +379,10 @@ eg
 	quot  : 0x22
 	char  : 9..126
 
-Another way to express this is to use the expression: :[(char~quote)] which will match a :char except if a :quote would match, this is exactly the same as: :[(!quot char)], but it may be easier to read:
+Another way to express this is to use the expression: :[(char-quote)] which will match a :char except if a :quote would match, this is exactly the same as: :[(!quot char)], but it may be easier to read:
 
 eg
-	quote : quot (char~quot)* quot
+	quote : quot (char-quot)* quot
 
 The parser can compile either of these rules to the equivalent rule:
 
@@ -394,7 +397,7 @@ eg
 	comment : '/*' (!'*/' char)* '*/'
 	char    : 0x9..10FFFD
 
-As before, the expression: :[(char~'*/')] can be used to express the same thing. It will match a :char except if a :['*/'] would match, but in this case there is no way to reduce this into a simple character set.
+As before, the expression: :[(char-'*/')] can be used to express the same thing. It will match a :char except if a :['*/'] would match, but in this case there is no way to reduce this into a simple character set.
 
 A positive assertion that a rule ~would match, but without matching any input, can be expressed as :[!!x], and this can also be written as :[&x], the PEG notation.
 
@@ -407,7 +410,7 @@ Negation of an arbitrary rule is a powerful concept and it allows a grammar to s
 
 Sect	Context Free Grammars
 
-The examples shown earlier are quite typical, and they can all be read as ~[one-match] rules that make a committed choice to the first match. The rules look very familiar as context free grammar rules, but closer inspection will reveal that the traditional ~[multi-match] interpretation is not required. Gist is a form of Parser Expression Grammar (PEG), which provides a formal technical base for one-match grammar rules.
+The examples shown earlier are quite typical, and they can all be read as ~[one-match] rules that make a committed choice to the first match. The rules look very familiar as context free grammar rules, but closer inspection will reveal that the traditional ~[multi-match] interpretation is not required. Gist is a form of Parser Expression Grammar, #PEG, which provides a formal technical base for one-match grammar rules.
 
 A Gist grammar is based on one-match rules to allow the rules to be efficiently executed. A one-match rule makes a committed choice, so once a choice option matches any other options become irrelevant. If a rule fails to fully match then earlier committed choices will be abandoned without exploring any other options (like a programming language if-then-else). A context-free grammar rule is multi-match and a later failure explores all earlier options.
 
@@ -662,14 +665,13 @@ prose
 	#_	link-id
 	@[_]	link-uri
 
-
 style
 	.undef { color:red; background-color:yellow; }
 	.title, .author, .date { text-align: center; }
 	.eg { background-color:#FFFDDA; border: thin solid #ECECEC; }
+	dl { font-size:small;}
+	dt { margin-top: 10pt; }
 	.format, .prose, .style { display:none; }
-
-
 
 
 

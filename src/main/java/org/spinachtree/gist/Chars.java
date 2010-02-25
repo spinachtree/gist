@@ -24,7 +24,6 @@ class Chars extends ParseOp {
 	boolean parse(Scan scan) {
 		int i=scan.pos;
 		if (i>=scan.eot) return false;
-		//int ch=scan.input.codePointAt(i); 
 		int ch=scan.codePoint();
 		int bot=0;
 		int top=size;
@@ -36,7 +35,6 @@ class Chars extends ParseOp {
 				bot=pick+2;
 				else { // ch is in range... advance..
 					scan.advance();
-					//if (ch<0x10000) scan.pos+=1; else scan.pos+=2;
 					return true;
 				}
 		}

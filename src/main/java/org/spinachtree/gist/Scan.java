@@ -74,10 +74,6 @@ public class Scan {
 	public int codePoint() {
 		if (pos>=eot) return -1;
 		ch=input.codePointAt(pos);
-		if (ch<33 && skip>0) {
-			advance();
-			return codePoint();
-		}
 		return ch;
 	}
 

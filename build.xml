@@ -135,6 +135,12 @@
 		</java>
 	</target>
 
+	<target name="mot.history">
+		<java classname="Prose" classpathref="prose.cp" >
+		<arg value="${basedir}/doc/history.tad"/>
+		</java>
+	</target>
+
 
 
 

@@ -149,24 +149,11 @@ public class GistTest {
 	}*/
 
 	@Test
-	public void spacedTest() {
-		String spacedTest=
-		"	Ints  =~ int*       \n"+
-		"	int   :  '0'..'9'+   \n";
-
-		Gist imp=new Gist(spacedTest);
-		Term t=imp.parse("  12	34   56");
-		//System.out.println(t);
-		assertTrue(t.isTag("Ints"));
-	}
-	
-	
-	@Test
 	public void importTest() {
 		String importTest=
 		"	Imp   = letter Nd (letter/digit)* \n"+
 		"	digit =  gist.pragma.Nd        \n"+
-		"	_     :  gist.pragma._         \n";
+		"	_     =  gist.pragma._         \n";
 
 		Gist imp=new Gist(importTest);
 		Term t=imp.parse("x42");

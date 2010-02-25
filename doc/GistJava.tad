@@ -95,12 +95,12 @@ eg
 			"text = (lt/amp/txt)*  ",
 			"lt   : '<'            ",
 			"amp  : '&'            ",
-			"txt  : (char-lt-amp)+ ",
+			"txt  : (char~lt~amp)+ ",
 			"char : 0x1..10ffff    " );
 
 		public static void main(String[] args) {
-	                String in="if (X < Y && Z) then ...";
-	                if (args.length>0) in=args[0];
+	                String in = "if (X < Y && Z) then ...";
+	                if (args.length>0) in = args[0];
 	                System.out.println( in +" => "+ xmlText(in) );
 		}	
 
@@ -232,12 +232,12 @@ eg
 		public static void main(String[] args) {
 			
 			static final Gist json = new Gist(
-			"	json   = ~ (object / array) ~          ",
-			"	object = '{' ~ pairs? ~ '}'            ",
-			"	pairs  =  pair (~ ',' ~ pair)*         ",
-			"	pair   = string ~ ':' ~ val            ",
-			"	array  = '[' ~ vals? ~ ']'             ",
-			"	vals   =  val (~','~ val)*             ",
+			"	json   = (object / array) ~            ",
+			"	object = ~ '{' ~ pairs? ~ '}'               ",
+			"	pairs  = pair (~ ',' ~ pair)*            ",
+			"	pair   = string ~ ':' ~ val               ",
+			"	array  = ~ '[' ~ vals? ~ ']'                ",
+			"	vals   = val (~ ',' ~ val)*               ",
 			"	val    = object/array/string/number    ",
 			"	         /true/false/null              ",
 			"	string = quot.. (chs/esc)* quot..      ",
@@ -400,30 +400,27 @@ eg
 
 sect	References:
 
-define
+defs
 	Gist		Information on the Gist Grammar language: [http://spinachtree.org/gist]
 	GistAPI		The Gist in Java API: [http://spinachtree.org/gist/java/api]
 	Json		Json data language: [http://www.json.org/]
 
 
 format
-	title	<h1 class='title'>%text</h1>
-	sect	<h2 class='sect'>%text</h2>
-	sub1	<h3 class='sect'>%text</h3>
-	eg	<pre class='eg'>%text</pre>
+	title	h1:prose
+	sect	h2:prose
+	sub1	h3:prose
+	eg	pre:text
 
-	[ref:_]		<undefined>[%text]</undefined>
-	[ref:?]		<a href="#%text">%text</a>
-	[http:_]	<a href="http:%text">http:%text</a>
+	#[_]	link-id
+	@[_]	link-uri
 	
-	[:_]	<tt>%text</tt>
-	(_:_)	<%prefix>%prose</%prefix>
-	(:_)	<tt>%prose</tt>
-	(~_)	<em>%prose</em>
+	:_	tt:text
+	~_	em:prose
 	
 
 style
-	undefined { color:red; background-color:yellow; }
+	undef { color:red; background-color:yellow; }
 	.title { text-align: center; }
 	dl dt { font-weight: bold; }
 	.eg { background-color:#FFFDDA; border: thin solid #ECECEC; }
