@@ -1,8 +1,8 @@
 
-Title	The Gist Grammar Language
+title	Gist Grammar Language Guide
 
 
-Sect	Introduction
+sect	Introduction
 
 Gist is a grammar language that defines both an input syntax and an output parse tree structure. This allows a universal parser to directly execute any Gist grammar. Application programs can use a Gist grammar to match an input string just as easily as using a regular expression.
 
@@ -32,7 +32,7 @@ Grammar rules have more expressive power than regular expressions, but tradition
 For unambiguous computer languages Gist can be used to replace a traditional context-free grammar, and it can also define useful language features that are beyond a context-free grammar.
 
 
-Sect	The Gist Parse Tree
+sect	The Gist Parse Tree
 
 Gist rules are an intrinsic definition for the syntax tree that the parser will generate. Each rule is a node in the tree, and rules that it calls will generate its children nodes.
 
@@ -122,16 +122,16 @@ This tree has the structure: :[(((12),3),45)].
 
 
 
-Sect	Some Examples
+sect	Some Examples
 
-Sub1	Arithmetic Expressions
+sub1	Arithmetic Expressions
 
-The next examples use arithmetic expressions to show a couple of different grammar design options. The first version is simple and efficient, the grammar implements operator precedence, but left association remains for the application to evaluate:
+The next examples use arithmetic expressions to show a couple of different grammar design options. The first version is simple and efficient, the grammar implements operator precedence, but left association remains for the application to evaluate. As a minor refinement the :[Val..] rule has an ellipsis to prune the :Val node from the parse tree:
 
 eg
 	Exp   = Mul (sum Mul)*
 	Mul   = Val (mul Val)*
-	Val   = int / '(' Exp ')'
+	Val.. = int / '(' Exp ')'
 	sum   : '+' / '-'
 	mul   : '*' / '/'
 	int   : '0'..'9'+
@@ -140,57 +140,57 @@ The parse tree for :[1+2*(3-6/3+1)] is:
 
 eg
 	Exp
-		Mul	Val	int	"1"
+		Mul	int	"1"
 		sum	"+"
 		Mul
-			Val	int	"2"
+			int	"2"
 			mul	"*"
-			Val	Exp
-				Mul	Val	int	"3"
+			Exp
+				Mul	int	"3"
 				sum	"-"
 				Mul
-					Val	int	"6"
+					int	"6"
 					mul	"/"
-					Val	int	"3"
+					int	"3"
 				sum	"+"
-				Mul	Val	int	"1"
+				Mul	int	"1"
 
 This parse tree is shown in a compact format that allows a singleton child to appear on the same line a its parent. Sibling children are aligned in a column with the same inset, which shows the nesting level, but extra inset levels are not required after singleton parents. The tree structure should be apparent after a little study. Larger parse trees are much easier to read with this format.
 
 The next example uses left recursion to express left association:
 
 eg
-	Expr  = Exp
-	Exp   = Add / Sub / Item
-	Add   = Exp '+' Item
-	Sub   = Exp '-' Item
-	Item  = Mul / Div / Val
-	Mul   = Item '*' Val
-	Div   = Item '/' Val
-	Val   = Int / '(' Exp ')'
-	Int   : '0'..'9'+
+	Exp   = Add / Sub / Term
+	Add   = Exp '+' Term
+	Sub   = Exp '-' Term
+	Term..= Mul / Div / Val
+	Mul   = Term '*' Val
+	Div   = Term '/' Val
+	Val.. = int / '(' Exp ')'
+	int   : '0'..'9'+
 
 The parse tree for :[1+3*(5-6/3+2)] is:
 
 eg
-	Expr
-		Exp	Add
-			Item	Val	Int	"1"
-			Item	Mul
-				Item	Val	Int	"3"
-				Item	Val	Exp	Add
-					Exp	Sub
-						Item	Val	Int	"5"
-						Item	Div
-							Item	Val	Int	"6"
-							Item	Val	Int	"3"
-					Item	Val	Int	"2"
+	Exp	Add
+		Exp	int	"1"
+		Mul
+			int	"3"
+			Exp	Add
+				Exp	Sub
+					Exp	int	"5"
+					Div
+						int	"6"
+						int	"3"
+				int	"2"
 
 An application can walk through either of these parse trees to evaluate the expression. The first tree requires the application to iterate over a flat list of children nodes and implement left association, but that is not difficult.
 
+Although the Gist grammar rules enable quite a range of different parse tree structures it remains a concrete syntax parse tree. The Gist universal parser does not try to generate an abstract syntax tree, it is left to the application to transform the parse tree, or to implement its own tree structure directly from the Gist grammar rules.
 
 
-Sub1	The JSON Data Language
+
+sub1	The JSON Data Language
 
 JSON is a text data language that is available in almost every programming languages. It can represent an ordered list of values, and a map of named values:
 
@@ -291,7 +291,7 @@ An application program can then translate the parse tree into native programming
 
 
 
-Sect	Literal Values
+sect	Literal Values
 
 Literal character values can be expressed in various ways:
 
@@ -303,7 +303,7 @@ eg
 
 Literal characters boil down to integer values, and are not restricted to a byte code value. Literal character values will normally be interpreted as Unicode character code points.
 
-Sub1	White Space
+sub1	White Space
 
 Grammar rules to match white-space characters are required by most grammars. The #Posix definition for whitespace characters is:
 
@@ -322,7 +322,7 @@ eg
 
 For convenience the :[~] symbol is predefined as :[sp*] to match any white space characters.
 
-Sub1	New Line Codes
+sub1	New Line Codes
 
 Unfortunately several different conventions are used for new line codes. The #IETF defines an Internet line-end as carriage-return line-feed:
 
@@ -339,9 +339,9 @@ eg
 For convenience the :[$] symbol is predefined as :[nl] to match a line break.
 
 
-Sub1	Any Character
+sub1	Any Character
 
-The symbol ":[_]" is defined to match any character code, and this can sometimes be useful, but is best avoided since it will match control code characters, permanently undefined characters, surrogate pair characters, and more. An XML document allows almost any Unicode character, but that is not the same as absolutely anything. A reasonable set of characters compatible with XML 1.1 can be defined as:
+The symbol ":[_]" is defined to match any character code, and this can sometimes be useful, but is best avoided since it will match control code characters, permanently undefined characters, surrogate pair characters, and more. An XML document allows almost any Unicode character, but that is not the same as any code value. A reasonable set of characters compatible with XML 1.1 can be defined as:
 
 eg
 	char: 8..10/13/0x20..7E/0x85/0xA0..D7FF/0xE000..FDCF/0xFDC0..FFFD/0x10000..10FFFD
@@ -349,7 +349,7 @@ eg
 Replicating this sort of definition is cumbersome and tedious, a better way is to use an external reference to a library of common standards.
 
 
-Sect	External References
+sect	External References
 
 Gist can refer to rules defined in an external grammar. This enables a grammar to be composed in modules, and supports the use of common standard rules.
 
@@ -366,7 +366,7 @@ eg
 Rule names must be unique within a grammar, but external references can import different rules from different grammars that have the same rule name. The parse tree nodes use rule names, but they can be distinguished by their path names in the parse tree. Grammars are named in a separate name space, and these names do not appear in the parse tree.
 
 
-Sect	Negation
+sect	Negation
 
 The not-predicate :[!X] says that an expression :X will ~not match.
 
@@ -408,11 +408,11 @@ Negation of an arbitrary rule is a powerful concept and it allows a grammar to s
 
 
 
-Sect	Context Free Grammars
+sect	Context Free Grammars
 
 The examples shown earlier are quite typical, and they can all be read as ~[one-match] rules that make a committed choice to the first match. The rules look very familiar as context free grammar rules, but closer inspection will reveal that the traditional ~[multi-match] interpretation is not required. Gist is a form of Parser Expression Grammar, #PEG, which provides a formal technical base for one-match grammar rules.
 
-A Gist grammar is based on one-match rules to allow the rules to be efficiently executed. A one-match rule makes a committed choice, so once a choice option matches any other options become irrelevant. If a rule fails to fully match then earlier committed choices will be abandoned without exploring any other options (like a programming language if-then-else). A context-free grammar rule is multi-match and a later failure explores all earlier options.
+A Gist grammar is based on one-match rules to allow the rules to be efficiently executed. A one-match rule makes a committed choice, so once a choice option matches any other options become irrelevant. If a rule fails later then earlier committed choices will be abandoned without exploring any other options (like a programming language conditional-OR). A context-free grammar rule is multi-match and a later failure explores all earlier options.
 
 In practice most grammars do not require a multi-match interpretation, but some traditional multi-match rules may need to be re-written as one-match rules. For example a traditional grammar, or a regular expression, allows you to express any number of digits ending with a "0" as:
 
@@ -429,13 +429,13 @@ eg
 As a form of PEG grammar a Gist grammar is incomparable with a context-free grammar. There are (rare) examples of context-free grammar rules that can not be translated into PEG rules, and there are PEG rules (using negation) that can not be translated into context-free grammar rules.
 
 
-Sect	Context Sensitive Grammars
+sect	Context Sensitive Grammars
 
 Almost all computer languages can be defined with a context-free grammar or a PEG grammar, and the vast majority of practical applications are well covered. But there are a few important exceptions that require context-sensitive grammar rules. Gist can express some context-sensitive grammars.
 
 Sometimes the context-sensitive constraints do not need to be enforced by the parser, and an application program can process the parse tree later to verify the required constraints. The XML grammar is an example of this, the grammar can be expressed as a context-free (or PEG) that does not enforce several constraints, including the constraint that start and end tags must be the same name. However there are some grammars that can not be parsed without a context-sensitive grammar.
 
-Sub1	The Same Match Operator
+sub1	The Same Match Operator
 
 A language with an expression that starts with a particular label and must end with the same label requires a context-sensitive grammar. A context-free grammar would require a rule for every possible label, which may not be practical or possible.
 
@@ -479,7 +479,7 @@ eg
 
 The full Ruby syntax is more complicated, but this is the gist of it.
 
-Sub1	Off-side Rules
+sub1	Off-side Rules
 
 A computer programming language is said to employ an  #[off-side] rule if it uses indentation to express nested scope of declarations.
 
@@ -521,7 +521,7 @@ eg
 	if   = inset 'if' test 'then' expr (@inset 'else' expr)?
 
 
-Sub1	Precondition Predicates
+sub1	Precondition Predicates
 
 A precondition is some element in the input text that allows the grammar to discriminate between different grammar rules that would otherwise be ambiguous. For example, to distinguish a European from a US date format we could write :["d/m/y 9/11/2001"], for a Euopean date, and :["m/d/y 9/11/2001"], for a US date.
 
@@ -546,9 +546,14 @@ eg
 The :dmy or :mdy are used as preconditions, to match a :Date one or other of them must appear earlier in the parse tree.
 
 
-Sect	Events
+sub1	Unrestricted Grammars
 
-Events provide an escape mechanism to enable a Gist parser to interact with an external application program. They can be used as a debug tool, and they enable an application to process events "on-the-fly" as the parse proceeds. It is best to avoid events in shared grammar specifications.
+It is almost always possible to design a new grammar with PEG rules, but occasionally there may be features that can not be defined. The context-sensitive features discussed above cope with some of the exceptions. But there are rare cases that just can't be defined without a full phrase structure grammar that can express an unrestricted grammar, which is equivalent to a Turning machine and covers everything that can be computed.  Gist has an ~event element as an escape-hatch to allow a grammar rule to invoke an external programming language method.
+
+
+sect	Events
+
+Events provide an escape mechanism to enable a Gist parser to interact with an external application program. They can be used as a debug tool, and they enable an application to process events "on-the-fly" as the parse proceeds. The event interface can even be used to allows an application program to take over control of the parser. It is best to avoid events in shared grammar specifications.
 
 An :[<event>] can be inserted anywhere in a grammar, and whenever the parser reaches that point in evaluating a grammar rule it will invoke an interface or generate a event message, and wait for the application environment to respond. A default event handler can simply print out the name of the event and a progress report to trace the progress of the parser showing the scanner position in the input string.
 
@@ -559,7 +564,7 @@ The event interface should also allow an application to cause the parse to fail,
 Events enable a Gist grammar to implement arbitrary input matchers, constraints and semantic methods.
 
 
-Sect	Gist Parser
+sect	Gist Parser
 
 Gist requires a top down parser. A recursive descent parser is a simple and elegant way to parse grammar rules, but the implementation needs to be extended to handle left recursion, and to address the concern that a grammar may (at least in theory) require an exponential parse time #Parsing.
 
@@ -573,8 +578,11 @@ Fortunately it is possible to use a lazy cache scheme that only employs a memo w
 
 For an implementation of a Gist parser in Java see: #[Gist in Java].
 
+Of course a Gist parser is fully automated, so there is no opportunity to hand craft the parse tree node structure or fine tune the parser machinery. For ultimate performance and application integration you may need to move to a custom crafted parser for your particular grammar. The #ANTLR parser generator project provides good tools and documentation to enable you to do that. Terence Parr's book #[Language Implementation Patterns] provides a excellent explanation of the design issues involved in crafting parsers and interpreters.
 
-Sect	Conclusions
+
+
+sect	Conclusions
 
 Gist provides a grammar language that can be automatically executed to generate a well defined parse tree structure.
 
@@ -591,7 +599,7 @@ On the other hand some practical applications are beyond a context-free grammar 
 Gist demonstrates a concise formal grammar specification with minimal extra notation that enables direct execution with a practical universal parser.
 
 
-Sect	References
+sect	References
 
 refs
 	ABNF
@@ -619,6 +627,9 @@ refs
 		Internet Engineering Task Force, develops and promotes Internet standards:  @[http://en.wikipedia.org/wiki/IETF]
 	JSON
 		JavaScript Object Notation, despite its name it is independent of JavaScript, see: @[http://www.json.org/]
+	Language Implementation Patterns
+		Terence Parr, Create Your Own Domain-Specific and General Programming Languages, ISBN: 978-1-93435-645-6
+		@[http://pragprog.com/titles/tpdsl/language-implementation-patterns]
 	Lazy Cashin Parser
 		A parser designed to implement Gist: @[http://spinachtree.org/gist]
 
@@ -650,10 +661,9 @@ refs
 		Extensible Markup Language: @[http://en.wikipedia.org/wiki/XML]
 
 format
-	Title	h1:prose
-	Sect	h2:prose
-	Sub1	h3:prose
-	Appendix	h2:prose
+	title	h1:prose
+	sect	h2:prose
+	sub1	h3:prose
 	para	p:prose
 	eg	pre:text
 	refs	dl:format

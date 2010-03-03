@@ -3,11 +3,11 @@ title	The Lazy Cashin Parser
 
 sect	Introduction
 
-A top down recursive descent parser is a simple and elegant way to parse grammar rules. Unfortunately the price for this simplicity has often been the inability to handle left recursive rules, and the possibility that a grammar may require an exponential parse time [ref:Parsing].
+A top down recursive descent parser is a simple and elegant way to parse grammar rules. Unfortunately the price for this simplicity has often been the inability to handle left recursive rules, and the possibility that a grammar may require an exponential parse time #Parsing.
 
-A cache memory for parse results can be used to enable a recursive descent parser to handle left recursion, and also to remove the possibility of an exponential time explosion. For a Parser Expression Grammar, a packrat parser, [ref:PEG], can achieve a linear parse time performance.
+A cache memory for parse results can be used to enable a recursive descent parser to handle left recursion, and also to remove the possibility of an exponential time explosion. For a Parser Expression Grammar, #PEG, a packrat parser, can achieve a linear parse time performance.
 
-Unfortunately the addition of a full packrat cache can add an overhead without much advantage to many grammars, [ref:Memos].  Also, the use of cache memos to gain performance conflicts with the more limited use of a grammar rule memo for left recursion.
+Unfortunately the addition of a full packrat cache can add an overhead without much advantage to many grammars, #Memos.  Also, the use of cache memos to gain performance conflicts with the more limited use of a grammar rule memo for left recursion.
 
 Dealing with left recursive rules requires a memo of a previous result which can act as a "seed" to grow a larger result. But it does not require a memo of every rule result for each input start position, as used in a packrat parser. It is sufficient to have a single memo for a grammar rule that can be updated each time the rule is applied.
 
@@ -24,7 +24,7 @@ eg
 	exp = exp '-' int / int
 	int : digit+
 
-The desired parse tree result for [:"5-3-2"] is [:(((5)-3)-2)]:
+The desired parse tree result for :["5-3-2"] is :[(((5)-3)-2)]:
 
 eg
 	exp
@@ -33,9 +33,9 @@ eg
 			int	"3"
 		int	"2"
 
-A top down parse can be explained with pencil and paper along these lines: To parse the :exp rule we must parse its body, which has a choice: [:(exp '-' int / int)]. The first choice starts with a recursion, if we had a solution for matching a [:"exp"] we could build on it, but without a known solution we only have the second choice, an [:int] which will match [:"5"]. We now have a first ~seed solution for [:exp] matching the input [:"5"].
+A top down parse can be explained with pencil and paper along these lines: To parse the :exp rule we must parse its body, which has a choice: :[(exp '-' int / int)]. The first choice starts with a recursion, if we had a solution for matching a :exp we could build on it, but without a known solution we only have the second choice, an :int which will match ":[5]". We now have a first ~seed solution for :exp matching the input ":[5]".
 
-Given a solution we can go back to the first choice and substitute this first [:exp] match result to generate a second solution [:"5-3"]. The new solution has expanded the first seed result, and we can substitute once more to match [:"5-3-2"]. It is an implicit assumption that we want to find the longest possible parse, so we should continue this process as many times as we can. In this case we are done, the solution matches [:"5-3-2"].
+Given a solution we can go back to the first choice and substitute this first :exp match result to generate a second solution ":[5-3]". The new solution has expanded the first seed result, and we can substitute once more to match ":[5-3-2]". It is an implicit assumption that we want to find the longest possible parse, so we should continue this process as many times as we can. In this case we are done, the solution matches ":[5-3-2]".
 
 So the problem is how to implement this process in a top down parser.
 
@@ -46,7 +46,7 @@ The basic strategy to parse left recursion is:
 
 *	Detect a loop, and fail (e.g. the :exp rule calling itself).
 
-*	Record a seed result for the rule (e.g. the other choice, int [:"5"])
+*	Record a seed result for the rule (e.g. the other choice, :[int "5"])
 
 *	Repeat a parse of the rule to grow the seed result.
 
@@ -103,7 +103,7 @@ eg
 				result=seed
 				return result
 
-This solution is not difficult to implement, and if the rules are implemented as objects with a parse method then the program code is little more than the outline sketch shown above. Notice that we have a memo result for the last match of every rule, so it could be used to speed up a rule that needs to be re-parsed after a failure backtrack. This would give a light-weight form of packrat parser, but it also pulls the rug out from under the left recursion, as we will see.
+This solution is not difficult to implement, and if the rules are implemented as objects with a parse method then the program code is little more than the outline sketch shown above. Notice that we have a memo result for the last match of every rule, so it could be used to speed up a rule that needs to be re-parsed after a failure backtrack. This would give a light-weight form of packrat parser, but it also pulls the rug out from under the left recursion, as we will see. After looking at left recursion we will return to this issue to see to how to also use memos for speed up.
 
 A parser also needs to build a parse tree, and each successful match result represents a new parse tree node. When a seed result is returned the corresponding node needs to be added into the parse tree, but no new machinery is required. Growing the seed generates a node in the parse tree as usual, and when the repeat loop needs to reset the parse tree and the input scan it uses the same mechanism as a failure backtrack. The machinery to build the parse tree therefore remains essentially unchanged by this implementation of left recursion, and the overhead on all other rules is insignificant.
 
@@ -117,7 +117,7 @@ eg
 	Sub   = Exp '-' int
 	int   : digit+
 
-The parse tree for input "5-3-2" should be (((5)-3)-2):
+The parse tree for input :["5-3-2"] should be :[(((5)-3)-2)]:
 
 eg
 	Exp	Sub
@@ -126,9 +126,9 @@ eg
 			int	"3"
 		int	"2"
 
-The "Exp" rule is indirectly left recursive via the transit "Sub" rule. This is a simple indirect loop, in general there may be an arbitrary number of transit rules that end up looping back to call the first rule again.
+The :Exp rule is indirectly left recursive via the transit :Sub rule. This is a simple indirect loop, in general there may be an arbitrary number of transit rules that end up looping back to call the first rule again.
 
-This is why it is important that a memo is only used for a rule that has detected a left recursive loop. If the memo where to be used for other rules then the implementation would fail to handle indirect recursion. For example, invoking the "Exp" rule results in the first attempt to match the "Sub" rule returning a failure since the "Exp" rule detects a loop. If the "Sub" rule recorded a memo then we would not be able to invoke the "Exp" rule again in order to build a longer match on top of the first "seed".
+This is why we are only using a memo for a rule that has detected a left recursive loop (for now). If a memo is automatically used to speed-up all rules then the implementation would fail to handle indirect recursion. For example, invoking the :Exp rule results in the first attempt to match the "Sub" rule returning a failure since the :Exp rule detects a loop. If the :Sub rule recorded a memo then we would not be able to invoke the :Exp rule again in order to build a longer match on top of the first "seed".
 
 Another complication is the possibility that a left recursive loop may contain another nested left recursion. For example:
 
@@ -142,7 +142,7 @@ eg
 	Val   = int | '(' Exp ')'
 	int   : '0'..'9'+
 
-A parser for this grammar should parse an input such as "1+2*(3-4/2+1)" into the tree:
+A parser for this grammar should parse an input such as :["1+2*(3-4/2+1)"] into the tree:
 
 eg
 	Exp	Add
@@ -206,7 +206,7 @@ eg
 	  = (C c / d) b* c*  -- B left-left recursion pruned
 	  = d c* b* a*       -- C recursion
 
-The pruned loops mean that these rules will not match some strings that a full expansion would match. Without pruning these rules would match: [:d (c | b | a)*].
+The pruned loops mean that these rules will not match some strings that a full expansion would match. Without pruning these rules would match: :[d (c | b | a)*].
 
 Nested left recursions are seen in practical grammars, but left-left recursion is very unusual, and not seen in practice, so pruning left-left loops does not seem to be an unreasonable restriction.
 
@@ -259,30 +259,28 @@ The implementation of left recursion in a top down parser can be remarkably simp
 
 The light-weight memo used for left recursion may also be used to avoid the need to re-parse a rule from the same start position. But it is not always safe to use a memo, we must be sure that the rule is a pure function with a fixed result that is always identical. A left recursive rule is not fixed, since it grows with each application. A static analysis can identify rules with a fixed result, and a rule can only be marked as fixed if all the rules it depends on are fixed, which excludes loops.
 
-This note is about program implementation, for more analysis consider ~fixed parse operators as ~regular functions [ref:Stepanov], and the lazy memo scheme as a form of dynamic programming [ref:Skiena].
+This note is about program implementation, for more analysis consider ~fixed parse operators as ~regular functions #Stepanov, and the lazy memo scheme as a form of dynamic programming #Skiena.
 
 Finally, an apology for the pun on my name and my nature, it's not often that being so lazy works so well.
 
 
 sect	References
 
-define
+refs
 	Gist
-		A Grammar Language with a Java implementation that used a Lazy Cashin Parser, see: [http://spinachtree.org/gist]
+		A Grammar Language implemented with a Lazy Cashin Parser, see: @[http://spinachtree.org/gist]
 	Parsing
-		[http://en.wikipedia.org/wiki/Parsing]
-
+		@[http://en.wikipedia.org/wiki/Parsing]
 	PEG
-		[http://en.wikipedia.org/wiki/Parsing_expression_grammar]
-
+		@[http://en.wikipedia.org/wiki/Parsing_expression_grammar]
 	LRPP
 		Alessandro Warth, James R. Douglass, and Todd Millstein, Packrat parsers can support left recursion. Workshop on Partial Evaluation and Program Manipulation (PEPM '08), January 2008. Describes a general method of extending the PEG model to support left recursion.
-		[http://portal.acm.org/citation.cfm?id=1328408.1328424]
-		[http://www.tinlizzie.org/~awarth/papers/pepm08.pdf]
+		@[http://portal.acm.org/citation.cfm?id=1328408.1328424]
+		@[http://www.tinlizzie.org/~awarth/papers/pepm08.pdf]
 
 	Memos
 		Ralph Becket and Zoltan Somogyi, DCGs + Memoing = Packrat Parsing: But is it worth it? Practical Aspects of Declarative Languages (PADL '08), January 2008. Explores implementation of packrat parsers in logic programming languages such as Prolog and Mercury.
-		[http://www.mercury.csse.unimelb.edu.au/information/papers/packrat.pdf]
+		@[http://www.mercury.csse.unimelb.edu.au/information/papers/packrat.pdf]
 
 	Skiena
 		Steven Skiena, The Algorithm Design Manual, Springer, ISBN 978-1-848000-069-8.
@@ -290,39 +288,32 @@ define
 	Stepanov
 		Alexander Stepanov, Paul McJones, Elements of Programming, Addison-Wesley, ISBN 978-0-321-63537-2
 
+
+
 format
-	title	<h1 class='title'>%text</h1>
-	sect	<h2 class='sect'>%text</h2>
-	sub1	<h3 class='sect'>%text</h3>
+	title	h1:prose
+	sect	h2:prose
+	sub1	h3:prose
+	para	p:prose
+	eg	pre:text
+	refs	dl:format
+	*	ul:format
 
-	eg	<pre class='eg'>%text</pre>
-
-	format	<pre class="format">%text</pre>
-	style	<pre class="style">%text</pre>
-	
-	:_	<tt>%text</tt>
-	[:_]	<tt>%text</tt>
-	(:_)	<tt>%prose</tt>
-
-	~_	<em>%text</em>
-	(~_)	<em>%prose</em>
-
-	"_"	&ldquo;%prose&rdquo;
-	":_"	<tt>%text</tt>
-
-	[ref:_]		<undefined>[%text]</undefined>
-	[ref:?]		<a href="#%text">%text</a>
-	[http:_]	<a href="http:%text">http:%text</a>
-
-	(_)	(%prose)
-
-	->	&rarr;
-	=>	&rArr;
+prose
+	:_	tt:text
+	~_	em:prose
+	"_"	quote:prose
+	#_	link-id
+	@[_]	link-uri
+	^[_]	link-name
 
 style
-	undefined { color:red; background-color:yellow; }
-	.title { text-align: center; }
+	.undef { color:red; background-color:yellow; }
+	.title, .author, .date { text-align: center; }
 	.eg { background-color:#FFFDDA; border: thin solid #ECECEC; }
-	.format, .style { display:none; }
+	dl { font-size:small;}
+	dt { margin-top: 10pt; }
+	.format, .prose, .style { display:none; }
+
 
 

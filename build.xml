@@ -115,38 +115,57 @@
 	<property name="scala.home" value="/Users/peter/Downloads/scala-2.7.5.final" />
 	<property name="scala-library.jar" value="${scala.home}/lib/scala-library.jar" />
 
-	<property name="gist.jar" location="/Users/peter/Java/gist/gist-1.1/gist.jar"/>
+	<property name="gist.jar" location="${basedir}/gist.jar"/> <!-- "/Users/peter/Java/gist/gist-1.1/gist.jar" -->
 
 	<path id="prose.cp">
 	  <pathelement location="${prose.home}/target"   />
 	  <pathelement location="${scala-library.jar}"   />
 	  <pathelement location="${gist.jar}"   />
 	</path>
+	
 
-	<target name="mot.gist">
+	<target name="mot.intro">
 		<java classname="Prose" classpathref="prose.cp" >
-		<arg value="${basedir}/doc/Gist.mot"/>
+		<arg value="${basedir}/doc/intro.txt"/>
 		</java>
 	</target>
 
-	<target name="mot.tutorial">
+	<target name="mot.guide">
 		<java classname="Prose" classpathref="prose.cp" >
-		<arg value="${basedir}/doc/tutorial.txt"/>
+		<arg value="${basedir}/doc/guide.txt"/>
 		</java>
 	</target>
 
-	<target name="mot.history">
+	<target name="mot.story">
 		<java classname="Prose" classpathref="prose.cp" >
-		<arg value="${basedir}/doc/history.tad"/>
+		<arg value="${basedir}/doc/story.txt"/>
+		</java>
+	</target>
+
+	<target name="mot.ref">
+		<java classname="Prose" classpathref="prose.cp" >
+		<arg value="${basedir}/doc/ref.txt"/>
+		</java>
+	</target>
+
+	<target name="mot.lazy">
+		<java classname="Prose" classpathref="prose.cp" >
+		<arg value="${basedir}/doc/lazy.txt"/>
+		</java>
+	</target>
+
+	<target name="mot.home">
+		<java classname="Prose" classpathref="prose.cp" >
+		<arg value="${basedir}/doc/home.txt"/>
 		</java>
 	</target>
 
 
 
 
-<!-- build web site .................................... -->
+<!-- OLD ... uses Tad .... build web site ....................................  -->
 
-	<target name="web" depends="tad.compile">
+<target name="tad.web" depends="tad.compile">
 	        <delete dir="target/web"/>
 	        <mkdir dir="target/web/gist"/>
 	        <mkdir dir="target/web/gist/java"/>
@@ -180,7 +199,53 @@
 			${src}/Term.java">
 	</javadoc>
 
-	</target>
+</target>
+
+<target name="web" >
+	        <delete dir="target/web"/>
+	        <mkdir dir="target/web/gist"/>
+	        <mkdir dir="target/web/gist/java"/>
+
+	<!-- spinachtree.org/ -->
+	<java classname="Prose" classpathref="prose.cp" >
+		<arg line="doc/home.txt target/web/index.html"/>
+	</java>
+	<!-- spinachtree.org/gist/ -->
+	<java classname="Prose" classpathref="prose.cp" >
+		<arg line="doc/home.txt target/web/gist/index.html" />
+	</java>
+	<java classname="Prose" classpathref="prose.cp" >
+		<arg line="doc/intro.txt target/web/gist/intro.html" />
+	</java>
+	<java classname="Prose" classpathref="prose.cp" >
+		<arg line="doc/guide.txt target/web/gist/guide.html" />
+	</java>
+	<java classname="Prose" classpathref="prose.cp" >
+		<arg line="doc/ref.txt target/web/gist/ref.html" />
+	</java>
+	<java classname="Prose" classpathref="prose.cp" >
+		<arg line="doc/story.txt target/web/gist/story.html" />
+	</java>
+	<java classname="Prose" classpathref="prose.cp" >
+		<arg line="doc/lazy.txt target/web/gist/lazy.html" />
+	</java>
+	<copy file="doc/pragma.txt" tofile="target/web/gist/pragma.txt"/>
+	<!-- spinachtree.org/gist/java/ -->
+	<java classname="Prose" classpathref="prose.cp" >
+		<arg line="doc/home.txt target/web/gist/java/index.html" />
+	</java>
+	<java classname="Prose" classpathref="prose.cp" >
+		<arg line="doc/gist.java.txt target/web/gist/java/intro.html" />
+	</java>
+	<copy file="gist.jar" tofile="target/web/gist/java/gist.jar"/>
+	<!-- spinachtree.org/gist/java/api/ -->
+	<javadoc destdir="target/web/gist/java/api"
+		sourcefiles="${src}/Gist.java,
+			${src}/Term.java">
+	</javadoc>
+
+</target>
+
 
 <!-- run demos...................................................................... -->
 

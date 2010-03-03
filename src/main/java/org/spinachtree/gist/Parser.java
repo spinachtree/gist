@@ -41,7 +41,7 @@ class Parser {
 		"s       : blank* ", 
 		"xs      : (sp* ';'? comment?)* ", 
 		"comment : ('--' / '//' / '#') print* ",
-		"args    : (33..61/63..126)+ ", // !'>'
+		"args    : (32..61/63..126)+ ", // !'>'
 		"alnum   : alpha/digit ", 
 		"alpha   : 'a'..'z'/'A'..'Z' ", 
 		"digit   : '0'..'9' ", 
@@ -185,10 +185,14 @@ class Parser {
 		if (rule==null) rule=compileRule(name,ref,host);
 		if (rule.body!=null) { // rule has been compiled...
 			if (!rule.fixed) host.fixed=false;
+			//if (!rule.fixed && elide)
+			//	fault("Can't elide ref: "+name+", it may be recursive or irregular... ");
 			if (elide || host.term || rule.elide) return rule.body;
 			return new Ref(name,elide,host,ruleMap,rule);
 		} // else rule may be undefined or in a ref loop
         host.fixed=false; // safe, unknown resolution may be LR...
+		//if (!host.fixed && host.elide)
+		//	fault("Can't elide: "+host.name()+", it may be recursive or irregular... ");
 		return new Ref(name,elide,host,ruleMap,null);
 	}
 

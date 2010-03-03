@@ -151,8 +151,8 @@ public class GistTest {
 	@Test
 	public void importTest() {
 		String importTest=
-		"	Imp   = letter Nd (letter/digit)* \n"+
-		"	digit =  gist.pragma.Nd        \n"+
+		"	Imp   = letter Nd (letter/d)*  \n"+
+		"	d     =  gist.pragma.Nd        \n"+
 		"	_     =  gist.pragma._         \n";
 
 		Gist imp=new Gist(importTest);

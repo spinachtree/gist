@@ -19,7 +19,7 @@ public class Arith4 {
 		"L3    = R4 (op3 R4)*              \n"+
 		"R4    = op4? L5                   \n"+
 		"L5    = val op5?                  \n"+
-		"val   = var / int / '(' R1 ')'    \n"+
+		"val   = var / int / '(' L2 ')'    \n"+
 		"op1   : '='                       \n"+
 		"op2   : '+' / '-'                 \n"+
 		"op3   : '*' / '/' / '%'           \n"+
@@ -30,15 +30,15 @@ public class Arith4 {
 
 		Gist exp=new Gist(arith);
 		
-		String in="1+2+3*(3-4/2+1)-4";
+		String in="x=1+2+3*(3-4/2+1)-4";
 		if (args.length>0) in=args[0];
 		
 		Term tree=exp.parse(in);
 		
 		System.out.println( in +" =>\n"+ tree );
 		
-		if (tree.isTag("exp")) // valid parse tree....
-			System.out.println( in +" = "+ calc(tree) );
+		if (tree.isTag("R1")) // valid parse tree....
+			System.out.println( in +" = "+ calc(tree.child("L2")) );
 	}
 
 	static int calc(Term t) { 
