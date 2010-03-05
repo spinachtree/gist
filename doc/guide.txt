@@ -548,20 +548,18 @@ The :dmy or :mdy are used as preconditions, to match a :Date one or other of the
 
 sub1	Unrestricted Grammars
 
-It is almost always possible to design a new grammar with PEG rules, but occasionally there may be features that can not be defined. The context-sensitive features discussed above cope with some of the exceptions. But there are rare cases that just can't be defined without a full phrase structure grammar that can express an unrestricted grammar, which is equivalent to a Turning machine and covers everything that can be computed.  Gist has an ~event element as an escape-hatch to allow a grammar rule to invoke an external programming language method.
+It is almost always possible to design a new grammar with PEG rules, but occasionally there may be features that can not be defined. The context-sensitive features discussed above cope with some of the exceptions. But there are rare cases that just can't be defined without a full unrestricted grammar.  Gist has an :[<event>] element to allow a grammar rule to invoke an external programming language method.
 
 
 sect	Events
 
-Events provide an escape mechanism to enable a Gist parser to interact with an external application program. They can be used as a debug tool, and they enable an application to process events "on-the-fly" as the parse proceeds. The event interface can even be used to allows an application program to take over control of the parser. It is best to avoid events in shared grammar specifications.
+Events provide an escape mechanism to enable a Gist parser to interact with an external application program. They can be used as a debug tool, and they enable an application to process parsed terms "on-the-fly" as the parse proceeds. The event action interface allows an application program to execute input matchers, constraints and semantic methods. External actions can only be defined with prose narrative or a specific programming language implementation. It is best to avoid event driven actions in a grammar specification.
 
-An :[<event>] can be inserted anywhere in a grammar, and whenever the parser reaches that point in evaluating a grammar rule it will invoke an interface or generate a event message, and wait for the application environment to respond. A default event handler can simply print out the name of the event and a progress report to trace the progress of the parser showing the scanner position in the input string.
+An :[<event>] can be inserted anywhere in a grammar, and whenever the parser reaches that point in evaluating a grammar rule it will invoke an interface, and wait for the application environment to respond. A default action event handler can simply print out the name of the action with a progress report to trace the progress of the parser showing the scanner position in the input string.
 
-An event interface allows a parser to send parsed terms to an application before a complete parse tree is constructed. This can be useful if the parse tree is expected to be very large, or if the input is a stream with an unknown duration. Any Gist grammar can be used to implement an event driven model by adding named event elements into the grammar rules at any desired point, and writing an application processor to handle the event stream.
+An event driven action allows an application to process parsed terms before a complete parse tree is constructed. This can be useful if the parse tree is expected to be very large, or if the input is a stream with an unknown duration. Any Gist grammar can be used to implement an event driven model by adding :[<namedEvent>] elements into the grammar rules at any desired point, and writing an application processor to handle the action event stream.
 
-The event interface should also allow an application to cause the parse to fail, or to consume additional input,  and to abandon parse tree elements that are no longer required.
-
-Events enable a Gist grammar to implement arbitrary input matchers, constraints and semantic methods.
+The event action interface allows an application to cause the parse to fail, or to consume additional input, and to abandon parse tree elements that are no longer required. This enables a parser to implement arbitrary input matchers, constraints and semantic predicates.
 
 
 sect	Gist Parser
@@ -578,7 +576,7 @@ Fortunately it is possible to use a lazy cache scheme that only employs a memo w
 
 For an implementation of a Gist parser in Java see: #[Gist in Java].
 
-Of course a Gist parser is fully automated, so there is no opportunity to hand craft the parse tree node structure or fine tune the parser machinery. For ultimate performance and application integration you may need to move to a custom crafted parser for your particular grammar. The #ANTLR parser generator project provides good tools and documentation to enable you to do that. Terence Parr's book #[Language Implementation Patterns] provides a excellent explanation of the design issues involved in crafting parsers and interpreters.
+Of course a Gist parser is fully automated, so there is no opportunity to hand craft the abstract syntax tree node structure or fine tune the parser machinery. For ultimate performance and application integration you may need to move to a custom crafted parser for your particular grammar. The #ANTLR software provides excellent tools and documentation to enable you to do that. Terence Parr's book #[Language Implementation Patterns] explains many of the design issues involved in crafting parsers and interpreters.
 
 
 
@@ -667,20 +665,21 @@ format
 	para	p:prose
 	eg	pre:text
 	refs	dl:format
+	*	ul:format
 
 prose
-	:_	tt:text
-	~_	em:prose
-	"_"	quote:prose
-	#_	link-id
-	@[_]	link-uri
+	:_	tt
+	~_	em
+	"_"	quote
+	#_	linkID
+	@[_]	link
 
 style
 	.undef { color:red; background-color:yellow; }
 	.title, .author, .date { text-align: center; }
 	.eg { background-color:#FFFDDA; border: thin solid #ECECEC; }
-	dl { font-size:small;}
-	dt { margin-top: 10pt; }
+	dl { font-size:small; }
+	dl dd p { margin: 0pt 0pt 10pt 0pt; }
 	.format, .prose, .style { display:none; }
 
 

@@ -27,7 +27,7 @@
     </target>
     <target name="scan">
         <javac srcdir="${src}" destdir="target/main"
-		includes="Term.java,Scan.java,Vent.java,Library.java"/> 
+		includes="Term.java,Scan.java,Action.java,Library.java"/> 
     </target>
 
     <!-- build jar....................................................................... -->
@@ -70,11 +70,14 @@
 
 	<target name="doc">
 		<javadoc destdir="target/web/gist/java/"
-			sourcefiles="${src}/Gist.java,
-				${src}/Term.java,
-				${src}/Parser.java,
-				${src}/Rule.java,
-				${src}/Scan.java">
+			packagenames="org.spinachtree.gist.*">
+		</javadoc>
+	</target>
+
+	<target name="xdoc">
+		<javadoc destdir="target/web/gist/java/"
+			sourcefiles="${src}/Term.java, ${src}/Scan.java,
+				${src}/Action.java, ${src}/Gist.java">
 		</javadoc>
 	</target>
 
@@ -239,9 +242,8 @@
 	</java>
 	<copy file="gist.jar" tofile="target/web/gist/java/gist.jar"/>
 	<!-- spinachtree.org/gist/java/api/ -->
-	<javadoc destdir="target/web/gist/java/api"
-		sourcefiles="${src}/Gist.java,
-			${src}/Term.java">
+	<javadoc sourcepath="src/main/java"   destdir="target/web/gist/java/api"
+		packagenames="org.spinachtree.gist">
 	</javadoc>
 
 </target>

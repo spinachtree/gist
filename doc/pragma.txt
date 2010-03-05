@@ -1,9 +1,5 @@
 
--- These grammar rules are bundled with the Gist package 
--- to load this grammar use:
---   Gist.load("gist.pragma", " <this file...> ")
--- to import them all use:
---    _ = gist.pragma._
+-- These grammar rules are bundled with the Gist package
 
 	TAB : 9  -- ASCII std char name
 	LF  : 10 -- line feed

@@ -16,14 +16,12 @@ import java.util.*;
 import org.spinachtree.gist.*;
 
 public class Date {
-
 	static Gist date = new Gist(
 	    "Date  = year '-' month '-' day ",
 	    "year  : d d d d ",
 	    "month : d d? ",
 	    "day   : d d? ",
 	    "d     : '0'..'9' ");
-
 	public static void main(String[] args) {
 		Term dt=date.parse("2009-8-7");
 		System.out.println(dt);
@@ -130,7 +128,7 @@ public class Gist {
 	<p>A grammar must be loaded into the library for
 		an external reference in another grammar
 		to be able to find it.
-	@param label   grammar name, may be a URI format
+	@param label   grammar name, may use Java package name format
 	*/
 	public static void load(String label, String... lines) {
 		Library.put(label,concat(lines));
@@ -156,11 +154,11 @@ public class Gist {
 	
 	/**
 	only needed for an application that wants to handle events
-	@param vent   an application sub-class extending the Vent class
+	@param action   an application sub-class implementing the Action i/f
 	*/
 
-	public Gist events(Vent vent) {
-		parser.vent=vent;
+	public Gist events(Action action) {
+		parser.action=action;
 		return this;
 	}
 

@@ -80,7 +80,7 @@ class Parser {
 	
 	Term parse(String src) {
 		Scan scan=new Scan(src,0);
-		if (vent!=null) scan.vent=vent;
+		if (action!=null) scan.action=action;
 		boolean result=ruleMap.get(start).parse(scan);
 		if (!result) return scan.faultResult(start+" parse failed... "); 
 		if (scan.pos<scan.eot) return scan.faultResult(start+" parse incomplete... "); 
@@ -94,7 +94,7 @@ class Parser {
 
 	String start; // first rule name
 	
-	Vent vent=null;
+	Action action=null;
 	
 	Term fault=null;
 	

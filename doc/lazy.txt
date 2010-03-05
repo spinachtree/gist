@@ -217,9 +217,9 @@ A packrat cache may be employed to enhance performance. It records a memo for ev
 
 The light-weight memos, as used for left recursion, can be used as a partial substitute for a packrat cache. They essentially come for free, but as we have seen it can be fatal to employ a memo inside an indirect left recursion.
 
-It is ironic that the use of packrat memos has inspired the design of extensions to handle left recursion, since making left recursion work properly in a full packrat parser is more complicated than using a memo for left recursion alone. A detailed discussion of handling left recursion in a packrat parser can be found in [ref:LRPP].  The design described here is quite a bit simpler.
+It is ironic that the use of packrat memos has inspired the design of extensions to handle left recursion, since making left recursion work properly in a full packrat parser is more complicated than using a memo for left recursion alone. A detailed discussion of handling left recursion in a packrat parser can be found in #LRPP.  The design described here is quite a bit simpler.
 
-Another problem with using memos is the possibility that a grammar rule may not have a ~fixed result, in other words it may match different results from the same input position. The one-match committed choice rules used in a PEG grammar always generate a fixed result. But a context-sensitive operator or extensions implemented in a programming language (such as an [:<event>] in [ref:Gist]) do not necessarily generate fixed results. A left recursive rule is not a fixed rule since the result changes as it is built up from an initial seed result.
+Another problem with using memos is the possibility that a grammar rule may not have a ~fixed result, in other words it may match different results from the same input position. The one-match committed choice rules used in a PEG grammar always generate a fixed result. But a context-sensitive operator or extensions implemented in a programming language (such as an :[<event>] in #Gist) do not necessarily generate fixed results. A left recursive rule is not a fixed rule since the result changes as it is built up from an initial seed result.
 
 We can determine if a rule generates a fixed result by building rules up from the bottom. One-match literal character terminal rules will be fixed, and composite rules will be fixed if they only refer to other rules that are known to be fixed, and only contain fixed result operators. A reference to a rule that is not fixed will contaminate all higher level rules.
 
@@ -240,7 +240,7 @@ A recursive descent parser can also use a lazy process for building the parse tr
 
 A disadvantage of a lazy process is that the current nesting of the rules being matched is hidden in the main procedure call evaluation stack, and is not easily available in the parser. This is not an issue in most cases, but it is a limitation for grammar debug tracing, and it may be required to handle left recursion in a full packrat parser. The left recursion method discussed here avoids this because it has no run-time need to identify transit rules that are called inside a recursive loop.
 
-The [ref:Gist] grammar can use an event for a debug trace. The grammar rule that an event occurs in is not easily known at run-time, but it is known at compile time and can be provided to the event parse operator.
+The #Gist grammar can use an event for a debug trace. The grammar rule that an event occurs in is not easily known at run-time, but it is known at compile time and can be provided to the event parse operator.
 
 The parse tree itself needs very little structure. A single linked list of nodes can be used, so failure backtracking is very low cost (just reset the pointer tracking the last node in the list). When a new node is created the list of nodes generated after the point the rule was invoked are linked into the child link of the new node. The new node replaces its children in the parsers list of nodes.
 
@@ -300,19 +300,19 @@ format
 	*	ul:format
 
 prose
-	:_	tt:text
-	~_	em:prose
-	"_"	quote:prose
-	#_	link-id
-	@[_]	link-uri
-	^[_]	link-name
+	:_	tt
+	~_	em
+	"_"	quote
+	#_	linkID
+	@[_]	link
+	^[_]	linkName
 
 style
 	.undef { color:red; background-color:yellow; }
 	.title, .author, .date { text-align: center; }
 	.eg { background-color:#FFFDDA; border: thin solid #ECECEC; }
-	dl { font-size:small;}
-	dt { margin-top: 10pt; }
+	dl { font-size:small; }
+	dl dd p { margin: 0pt 0pt 10pt 0pt; }
 	.format, .prose, .style { display:none; }
 
 

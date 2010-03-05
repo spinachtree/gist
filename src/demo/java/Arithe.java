@@ -5,6 +5,16 @@ import org.spinachtree.gist.*;
 // - evaluation maps directly into parse tree structure
 // - left association and operator precedence are explicit
 
+
+class ArithAct implements org.spinachtree.gist.Action {
+	
+	public boolean event(Scan scan,String rule,String event,String args) {
+		System.out.println("Event --> "+event);
+		return true;
+	}
+	
+}
+
 public class Arithe {
 	
 	public static void main(String[] args) {
@@ -21,7 +31,10 @@ public class Arithe {
 		
 		Gist exp=new Gist(arith);
 		
-		exp.events(new ArithVent());
+		ArithAct actor = new ArithAct();
+
+		//exp.events(((org.spinachtree.gist.Action) actor));
+		exp.events(actor);
 		
 		String in="1+2+3*(3-4/2+1)-4";
 		if (args.length>0) in=args[0];
@@ -49,13 +62,4 @@ public class Arithe {
 		throw new UnsupportedOperationException(t.toString());
 	}
 
-}
-
-class ArithVent extends Vent {
-	
-	public boolean event(String rule,String event,String args) {
-		System.out.println("Event --> "+event);
-		return true;
-	}
-	
 }

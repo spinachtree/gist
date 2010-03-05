@@ -2,11 +2,11 @@ title	The Story of Gist
 
 sect	Introduction
 
-This is the story behind Gist and how it evolved. If you just want to find out what Gist does and how to use it, then skip this note and jump across to: @[http://spinachtree.org/gist/intro.html]
+This is the story behind Gist and how it evolved. If you just want to find out what Gist does and how to use it, then skip this note and jump across to: @[http://spinachtree.org/gist/guide.html]
 
 Traditional grammar rules are concise and powerful, and they should be fun to use in a software application. So why do they almost always end up on the side-lines? Even when they are used in the formal specifications they get left behind in those documents. All too often different software products that claim to implement the same grammar specification end up with slightly different versions that create annoying quirks and defects.
 
-The grammar rules look like software instructions, so why can't we just automate them? There are text books full of various techniques to implement a parser for a grammar, but it turns out to be harder than it looks to fully automate a grammar. Good parser generator tools are available, but they are heavy duty tools that are mostly used by specialist designers for a major applications such as a new programming language. Many small grammar specifications do not seem to warrant these heavy duty tools, and they look easy enough to implement directly in an ad-hoc program, and that's what leads to the annoying quirks and defects.
+The grammar rules look like software instructions, so why can't we just automate them? There are text books full of various techniques to implement a parser for a grammar, but it turns out to be harder than it looks to fully automate a grammar. Good parser generator tools are available, but they are heavy duty tools that are mostly used by specialist designers for a major application such as a new programming language. Many small grammar specifications do not seem to warrant these heavy duty tools, and they look easy enough to implement directly in an ad-hoc program, and that's what leads to the annoying quirks and defects.
 
 The syntax for a programming language is almost always specified with a grammar. But grammar rules work just as well for simpler specifications such as data records, message formats and many other applications. The IETF Internet standards have used grammar specifications since the 1970s. Working with some of these grammars I found that they could be expressed with a simplified form of grammar rules that could be automated. This makes a grammar easy to design and develop and easy to use in an application program, it is fun, and it was the starting point for the Gist project. During the development of new specifications automated grammar rules can be easily modified and tested.
 
@@ -29,7 +29,7 @@ Over the last ten years I have implemented simplified grammar rules for a variet
 
 The key concept was to interpret grammar rules as "one-match" pattern matching expressions. In particular, a rule can match a string in only one way, if a rule could match the input in more than one way then the "winning" choice is prescribed. The simple grammar rules eliminate ambiguity. Traditional grammar rules are "multi-match", and they usually match the longest string first, but they reserve the option to back-track later and match shorter prefix strings.
 
-At first it seemed that "one-match" rules would be too simple, and they would limit the expressive power of the grammar. But that just didn't happen, in practice grammars didn't need "multi-match" rules, and when a grammar did employ a multi-match rule it could be re-formulated with one-match rules. Grammars that can not be expressed with "one-match" rules do exist, but they always seem to be contrived text-book examples.  
+At first it seemed that one-match rules would be too simple, and they would limit the expressive power of the grammar. But that just didn't happen, in practice grammars didn't need multi-match rules, and when a grammar did employ a multi-match rule it could be re-formulated with one-match rules. Grammars that can not be expressed with one-match rules do exist, but they always seem to be contrived text-book examples.  
 
 In fact one-match rules are often much better than traditional multi-match rules since they prevent the rules matching undesired patterns that can be just plain wrong. For example, an integer may be specified as a sequence of one or more digit. The intention is to match the ~longest string of digits, but a traditional grammar rule has no way to say that, it always reserves the option to match a shorter prefix integer. This allows the trailing digits to be matched by some subsequent rule, and the only way to meet the design intent is to ensure that there are no other rules that can match these digits.
 
@@ -38,7 +38,7 @@ Not only is there no way to express the fact that ~only the longest match is val
 
 sect	Parser Expression Grammars
 
-In 2004 Bryan Ford published papers on his PEG (Parser Expression Grammar) work. This was good news, a formal basis for a simpler grammar with one-match rules. It turns out that there are languages that a PEG can express but a traditional CFG (Context Free Grammar) can not, but others that a CFG can express but a PEG can not. But practical CFG languages can almost always be specified with a simpler PEG.
+In 2004 Bryan Ford published papers on his #PEG (Parser Expression Grammar) work. This was good news, a formal basis for a simpler grammar with one-match rules. It turns out that there are languages that a PEG can express but a traditional CFG (Context Free Grammar) can not, but others that a CFG can express but a PEG can not. But practical CFG languages can almost always be specified with a simpler PEG.
 
 A PEG is not only simpler to parse it also enables an efficient pack-rat parser which can parse in linear time. This work has revived interest in new work on parser design, an area that had for many years been considered exhausted.  
 
@@ -53,7 +53,7 @@ eg
 
 If only one choice operator is desired it is debatable which one is best. The longest match is more general and may be easier to use, but the first choice operator can be more efficient and seems to work well in practice. It can also be argued that using the "x | y" syntax for the longest match is confusing since it is not quite the same as the traditional "multi-match" operator. I have tried one and the other and both, and I can't see much in it. I moved to a first choice operator in line with a PEG.
 
-The problem for people who are familiar with multi-choice rules is more likely to be with the repeat operators than with the choice operator itself. The * repeat operator in a one-match rule will match as many times as possible, but it will not back-off to allow trailing element(s) to be matched by another term. Any rules that assume a repeat operator will back-off must be re-formulated in some other way, which is always possible, and often improves the grammar.
+The problem for people who are familiar with multi-choice rules is more likely to be with the repeat operators than with the choice operator itself. The * repeat operator in a one-match rule will match as many times as possible, but it will not back-off to allow trailing elements to be matched by another term. Any rules that assume a repeat operator will back-off must be re-formulated in some other way, which is always possible, and often improves the grammar.
 
 
 sect	Grammar Implicit Syntax Tree
@@ -75,11 +75,11 @@ A specification will often have a declarative reading, but not necessarily a pro
 
 There are two styles of parser design, one that processes the complete input string and generates a parse tree for the application, and another that generates a stream of events as the parser matches elements in the input string. The full parse tree style is usually simpler for an application to deal with, but an event style may be needed for processing a very large input string or a continuous input stream.
 
-A Gist grammar inherently defines a parse tree structure, but the rules can include event elements to enable an event driven parser. As a specification the Gist grammar should avoid event elements, but an implementation can choose an event driven style and annotate the grammar with event elements.
+A Gist grammar inherently defines a parse tree structure, but the rules can include event elements to enable an event driven parser. As a specification the Gist grammar should avoid event, but an implementation can choose to add event elements for an event driven style.
 
-In practice formal grammar specifications are sometimes not quite complete, and natural language is used to cover the holes in the grammar. For example, the specification may require a feature that can not be expressed as a context-free grammar, or maybe it is just too awkward to express. For an automated grammar there needs to be some way to express arbitrary features, and to allow an escape into a programming language implementation if necessary. In Gist the event interface provides an escape-hatch for any special requirements.
+In practice formal grammar specifications are sometimes not quite complete, and natural language is used to cover the holes in the grammar. For example, the specification may require a feature that can not be expressed as a context-free grammar, or maybe it is just too awkward to express. For an automated grammar there needs to be some way to express arbitrary features, and to allow an escape into a programming language implementation if necessary. In Gist the event action interface provides an escape-hatch for any special requirements.
 
-The performance of an automated grammar needs to be reasonably competitive when compared to a dedicated parser program for the same grammar. Of course a fully automated parser eliminates custom design of the parse tree, fine tuning of parser machinery, and close integration with an application program. For ultimate performance and application integration you may need to move to a custom crafted parser for your particular grammar. The #ANTLR parser generator project provides good tools and documentation to enable you to do that. Terence Parr's book #[Language Implementation Patterns] provides a excellent explanation of the design issues involved in crafting parsers and interpreters.
+The performance of an automated grammar needs to be reasonably competitive when compared to a dedicated parser program for the same grammar. Of course a fully automated parser eliminates custom design of the parse tree, fine tuning of parser machinery, and close integration with an application program. For ultimate performance and application integration you may need to move to a custom crafted parser for your particular grammar. The #ANTLR parser generator project provides great tools and documentation to enable you to do that. Terence Parr's book #[Language Implementation Patterns] explains many of the design issues involved in crafting parsers and interpreters.
 
 
 sect	Conclusions
@@ -109,6 +109,8 @@ refs
 		@[http://pragprog.com/titles/tpdsl/language-implementation-patterns]
 	LEX
 		Lexical token scanner generator, @[http://en.wikipedia.org/wiki/Lex_(software)]
+	PEG
+		Parser Expression Grammar: @[http://pdos.csail.mit.edu/~baford/packrat/thesis/]
 	YACC
 		Yet Another Compiler Compiler, @[http://en.wikipedia.org/wiki/Yacc]
 
@@ -122,18 +124,18 @@ format
 	*	ul:format
 
 prose
-	:_	tt:text
-	~_	em:prose
-	"_"	quote:prose
-	#_	link-id
-	@[_]	link-uri
+	:_	tt
+	~_	em
+	"_"	quote
+	#_	linkID
+	@[_]	link
 
 style
 	.undef { color:red; background-color:yellow; }
 	.title, .author, .date { text-align: center; }
 	.eg { background-color:#FFFDDA; border: thin solid #ECECEC; }
-	dl { font-size:small;}
-	dt { margin-top: 10pt; }
+	dl { font-size:small; }
+	dl dd p { margin: 0pt 0pt 10pt 0pt; }
 	.format, .prose, .style { display:none; }
 
 

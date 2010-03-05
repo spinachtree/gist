@@ -229,8 +229,8 @@ class Event extends ParseOp {
 	String args;
 	
 	boolean parse(Scan scan) {
-		if (scan.vent!=null)  
-			return scan.vent.event(scan,rule,name,args);
+		if (scan.action!=null)  
+			return scan.action.event(scan,rule,name,args);
 		System.out.println(scan.traceReport(rule+": "+event.text()));
 		return true;
 	}

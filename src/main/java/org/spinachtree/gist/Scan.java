@@ -31,6 +31,15 @@ class Memo {
 	}
 }
 
+/**
+Scan is only visible via an action event handler.
+<p>The Scan class contains the input text, cursor, parse tree term, etc.
+Normally for private use internal to the parser, but an action
+event handler is given access to the Scan public methods.
+</p>
+
+*/
+
 public class Scan {
 
 	Scan(String src, int sot) {
@@ -59,28 +68,53 @@ public class Scan {
 	
 	int skip=0;
 	
-	Vent vent=null; // event interface
+	Action action=null; // event interface
 	
 	Map<Rule,Memo> memos=new HashMap<Rule,Memo>();
 	
 	Term root() { return seed.next; }
 	
-	// public methods--------------------------------
+	// public interface methods for event actions...............
 	
+	/**
+	position of cursor index in the input scan
+	<p>This index may not be a character index. The character encoding
+		may use a byte index, and even in a Java string the use
+		of surrogate pairs the index is not one-to-one with chars.
+
+	@return cursor position
+	*/
 	public int pos() { return pos; }
 	
+	/**
+	last term created
+	<p>Terms prior to the event, but the parent host rule will
+		not yet exist (nor any other incomplete parents).
+
+	@return last term
+	*/
 	public Term tip() { return tip; }
 
+	/**
+	current char code
+	<p>char at current cursor position
+
+	@return int char point code
+	*/
 	public int codePoint() {
 		if (pos>=eot) return -1;
 		ch=input.codePointAt(pos);
 		return ch;
 	}
 
+	/**
+	advance to the next character position
+	<p>cursor position will increase by one or more
+
+	*/
 	public void advance() {
 		if (ch<0x10000) pos+=1; else pos+=2;
-	}
-	
+	}	
 	
 	// --- end of public methods -------------------
 	

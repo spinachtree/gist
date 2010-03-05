@@ -4,661 +4,65 @@ title	The Gist Grammar Language
 
 sect	Introduction
 
-Gist is a grammar language that defines both an input syntax and an output parse tree structure. This allows a universal parser to directly execute any Gist grammar. Application programs can use a Gist grammar to match an input string just as easily as using a regular expression.
+The Gist grammar language looks very much like a traditional #BNF grammar language, and it can be used to replace a traditional #ABNF or #EBNF specification. But the Gist grammar rules can also be executed directly. An automated parser can generate a parse tree that is implicitly defined by the grammar rules.
 
-For example, the grammar for a date format may be defined as:
+This means that a designer can incrementally verify the grammar rules as they are designed. It is easy to provide input strings to demonstrate the design intent and to provide verification test cases. An Gist parser is a huge help to a grammar designer, and hours of painstaking proof reading of formal specifications can be transformed into iterative experimentation and verification. Much more productive, and much better fun.
 
-eg
-	Date  = day '/' month '/' year
-	day   : d d?
-	month : d d?
-	year  : d d d d
-	d     : '0'..'9'
+Similar benefits are available from a parser generator development environment, such as #ANTLR, which has impressive graphics and debug facilities. The difference is that Gist has a tight focus on the grammar specification itself, everything is in the grammar rules. A Gist grammar can be used in an ANTLR development environment, and developed into a industrial strength parser for a particular grammar. But the Gist rules are stand alone, they are a complete specification, and a universal Gist parser can execute any Gist grammar.
 
-This grammar defines :[9/11/2001] as the 9th of November, not the 11th of September. The grammar defines a syntax that gives a semantic meaning to the date format. The :day and :month will match one or two digits, and the :year matches four digits. The general idea is easy to see, and the details will be explained shortly.
+If a Gist automated parser is available in your programming language (or you write one of your own) then you can use it directly in your applications. The Gist parser will generate a parse tree for ~any Gist grammar in a ~standard parse tree structure. That's great for productivity, and you can always build a ~custom parser for a ~particular Gist grammar if ultimate performance is essential.
 
-The Gist grammar rules can be directly used to label an input string. For example the :Date grammar will label the input string: :[9/11/2001] as:
+Although Gist looks very much like traditional grammar rules it is based on "one-match" rules that are a form of parser expression grammar, #PEG, which imposes some requirements on the way the grammar rules are formulated. These requirements are not difficult, and many grammar specifications are almost identical to an EBNF or ABNF specification. The expressive power of a Gist grammar goes beyond traditional context-free grammar rules.
 
-eg
-	Date
-		day	"9"
-		month	"11"
-		year	"2001"
 
-The grammar has been used as a pattern matcher to label the component parts of the input string, in other words the grammar rules have been used to parse the input string and generate a syntax parse tree. This is a simple and effective way for an application program to extract named fields from an input text string.
+sect	Gist Features
 
-Grammar rules have more expressive power than regular expressions, but traditional grammar rules are difficult to implement and may require custom programming or the use of a parser generator to implement a parser for each new grammar. Gist is designed to support efficient direct evaluation.
 
-For unambiguous computer languages Gist can be used to replace a traditional context-free grammar, and it can also define useful language features that are beyond a context-free grammar.
+*	Specifications in a traditional BNF style.
+	
+*	A simple top-down interpretation, but left recursive rules are allowed.
 
+*	Analytic one-match rules with a PEG interpretation.
 
-sect	The Gist Parse Tree
+*	Rules define an implicit parse tree structure.
 
-Gist rules are an intrinsic definition for the syntax tree that the parser will generate. Each rule is a node in the tree, and rules that it calls will generate its children nodes.
+*	Terminal string matching rules for clarity and efficiency.
 
-For example, a list of integer numbers separated by commas can be defined with a :list rule that is defined as a first :int followed by a comma character and another :int that can be repeated zero or more times, where the :int rule matches one or more digit.
+*	External grammar rule references for modularity and standard library rules.
 
-eg
-	list  = int (',' int)*
-	int   = digit+
-	digit = '0'..'9'
+*	Expressive power for useful context-sensitive grammars.
 
-The suffix repeat operator ":[*]" matches zero or more times, and the ":[+]" one or more times, but they only match the longest possible string, never a prefix. This is not quite the same as traditional context-free grammar rules or regular expressions which ~can match a shorter prefix. This difference does not appear in any of the following examples, it will be discussed later.
+*	Hooks to enable an event driven incremental parser.
 
-The :list grammar matches the string :["12,3,45"], and generates the syntax parse tree:
+*	An escape-hatch to invoke external semantic methods for special purpose extensions.
 
-eg
-	list
-		int
-			digit	"1"
-			digit	"2"
-		int
-			digit	"3"
-		int
-			digit	"4"
-			digit	"5"
+*	A fully automated universal parser (currently only a Java version).
 
-The rule name is used to label the input text that the rule matches. The :list is a composite term that matches the full input string with a list of :int rule names that match substrings. The :digit rule is a terminal rule that matches a digit character.
 
-A top down procedural reading of the grammar rules will match a :list by first matching an :int which in turn matches one or more :digit, which matches the :["1"] and the :["2"] and that completes the first :int. The :[','] and the next :int is then matched, and this is repeated as many times as possible. The repeat operators are one-match operators that match as many input characters as possible (they are "greedy").
+sect	To Learn More
 
-In this way the rules generate an intrinsic parse tree. Notice that the comma was matched with a literal character, without a named rule, so it does not appear as a term in the syntax tree structure.
-
-In this example the tree is a bit verbose, we don't really need the :digit terms, we would like the :int rule to match a numeric string directly, as a terminal. This can be expressed in Gist by using end-value string matching rule, designated with ":[:]" instead of ":[=]", to generate a leaf node in the parse tree:
-
-eg
-	list = int (',' int)*
-	int  : digit+
-	digit: '0'..'9'
-
-This grammar matches in exactly the same way, but it now generates the parse tree:
-
-eg
-	list
-		int	"12"
-		int	"3"
-		int	"45"
-
-The :int rule has been defined as a terminal rule that will generate a leaf node, and therefore the :digit rule will be absorbed into the :int rule, since it is only required to match digits, but without generating any :digit parse tree nodes.
-
-Another way to define a :list is with a choice operator, :[/], rather than a repeat operator. The choice :[x/y] is a first match committed choice, it will match option :x if possible, and will only try to match :y if the :x fails to match. The :list will first match any number of comma separated integers, and the second option will match the last one:
-
-eg
-	list  = int ',' list / int
-	int   : digit+
-	digit : '0'..'9'
-
-With these rules matching the string :["12,3,45"], generates the parse tree:
-
-eg
-	list
-		int	"12"
-		list
-			int	"3"
-			list
-				int	"45"
-
-This tree has the structure: :[(12,(3,(45)))].
-
-Yet another way to define a :list is:
-
-eg
-	list  = list ',' int / int
-	int   : digit+
-	digit : '0'..'9'
-
-This grammar is left recursive, and a simple procedural reading will fall into a fruitless loop. But a top down parser can be extended to accommodate left recursion; more on this later. A Gist parser will generate this parse tree:
-
-eg
-	list
-		list
-			list
-				int	"12"
-			int	"3"
-		int	"45"
-
-This tree has the structure: :[(((12),3),45)].
-
-
-
-
-sect	Some Examples
-
-sub1	Arithmetic Expressions
-
-The next examples use arithmetic expressions to show a couple of different grammar design options. The first version is simple and efficient, the grammar implements operator precedence, but left association remains for the application to evaluate. As a minor refinement the :[Val..] rule has an ellipsis to prune the :Val node from the parse tree:
-
-eg
-	Exp   = Mul (sum Mul)*
-	Mul   = Val (mul Val)*
-	Val.. = int / '(' Exp ')'
-	sum   : '+' / '-'
-	mul   : '*' / '/'
-	int   : '0'..'9'+
-
-The parse tree for :[1+2*(3-6/3+1)] is:
-
-eg
-	Exp
-		Mul	int	"1"
-		sum	"+"
-		Mul
-			int	"2"
-			mul	"*"
-			Exp
-				Mul	int	"3"
-				sum	"-"
-				Mul
-					int	"6"
-					mul	"/"
-					int	"3"
-				sum	"+"
-				Mul	int	"1"
-
-This parse tree is shown in a compact format that allows a singleton child to appear on the same line a its parent. Sibling children are aligned in a column with the same inset, which shows the nesting level, but extra inset levels are not required after singleton parents. The tree structure should be apparent after a little study. Larger parse trees are much easier to read with this format.
-
-The next example uses left recursion to express left association:
-
-eg
-	Exp   = Add / Sub / Term
-	Add   = Exp '+' Term
-	Sub   = Exp '-' Term
-	Term..= Mul / Div / Val
-	Mul   = Term '*' Val
-	Div   = Term '/' Val
-	Val.. = int / '(' Exp ')'
-	int   : '0'..'9'+
-
-The parse tree for :[1+3*(5-6/3+2)] is:
-
-eg
-	Exp	Add
-		Exp	int	"1"
-		Mul
-			int	"3"
-			Exp	Add
-				Exp	Sub
-					Exp	int	"5"
-					Div
-						int	"6"
-						int	"3"
-				int	"2"
-
-An application can walk through either of these parse trees to evaluate the expression. The first tree requires the application to iterate over a flat list of children nodes and implement left association, but that is not difficult.
-
-Although the Gist grammar rules enable quite a range of different parse tree structures it remains a concrete syntax parse tree. The Gist universal parser does not try to generate an abstract syntax tree, it is left to the application to transform the parse tree, or to implement its own tree structure directly from the Gist grammar rules.
-
-
-
-sub1	The JSON Data Language
-
-JSON is a text data language that is available in almost every programming languages. It can represent an ordered list of values, and a map of named values:
-
-eg
-	[ value, ... ]
-	{ "name": value, ... }
-
-The list of values is realized in most languages as an array, vector, list, or sequence. The map of name/value pairs is realized in various languages as an object, record, struct, dictionary, hash table, keyed list, or associative array. 
-
-The Gist grammar follows directly from the #JSON specification. Json ignores irrelevant white space, and the ":[~]" symbol is a convenient way to match any white space characters:
-
-eg
-	json   = (object / array) ~              
-	object = ~ '{' ~ pairs? ~ '}'                
-	pairs  = pair (~ ',' ~ pair)*             
-	pair   = string ~ ':' ~ val                
-	array  = ~ '[' ~ vals? ~ ']'                 
-	vals   = val (~ ',' ~ val)*                 
-	val    = object/array/string/number        
-	         /true/false/null                  
-	string = quot (chs/esc)* quot            
-	esc    = bs (code / 'u' hex)              
-	number = neg? digits frac? exp?            
-	frac   = '.' int                           
-	exp    = ('e'/'E') sign? int               
-	digits : '0'/'1'..'9' digit*               
-	int    : digit+                            
-	digit  : '0'..'9'                          
-	sign   : '+'/'-'                           
-	neg    :  '-'                              
-	true   : 'true'                            
-	false  : 'false'                           
-	null   : 'null'                            
-	hex    : (digit/'a'..'f'/'A'..'F')*4       
-	code   : bs/fs/quot/'b'/'f'/'n'/'r'/'t'     
-	bs..   : 92   -- back-slash                
-	fs..   : 47   -- forward-slash             
-	quot.. : 34   -- double-quote              
-	chs    : char+                             
-	char   : 0x20..10ffff-quot-bs          
-
-The last rule for "char" uses a "-" to exclude the "quote" and "bs" characters from the wide range of Unicode characters that Json accepts in character strings. This is a convenient syntax for negation, it is discussed more fully later. The ellipsis notation, as in :[bs..], defines a rule that will not appear in the parse tree, just as if it was a quoted literal character.
-
-Here is a JSON example (modified from #[RFC 4627]):
-
-eg
-	{
-	   "Image": {
-	       "Width":  800,
-	       "Height": 600,
-	       "Title":  "View from:\t15th Floor",
-	       "Thumbnail": {
-	           "Url":    "http://www.example.com/image/481989943",
-	           "Height": 125,
-	           "Width":  "100"
-	       },
-	       "IDs": [116, 943, 234, 38793]
-	     }
-	}
-
-The parse tree is:
-
-eg
-	json	object	pairs
-		pair
-			string	chs	"Width"
-			val	number	digits	"800"
-		pair
-			string	chs	"Height"
-			val	number	digits	"600"
-		pair
-			string	chs	"Title"
-			val	string
-				chs	"View from:"
-				esc	code	"t"
-				chs	"15th Floor"
-		pair
-			string	chs	"Thumbnail"
-			val	object	pairs
-				pair
-					string	chs	"Url"
-					val	string	chs	"http://www.example.com/image/481989943"
-				pair
-					string	chs	"Height"
-					val	number	digits	"125"
-				pair
-					string	chs	"Width"
-					val	string	chs	"100"
-		pair
-			string	chs	"IDs"
-			val	array	vals
-				val	number	digits	"116"
-				val	number	digits	"943"
-				val	number	digits	"234"
-				val	number	digits	"38793"
-
-An application program can then translate the parse tree into native programming language objects. The grammar rules can be arranged to help supports the application. For example, the :string rule collects a sequence of characters together as far as possible and identifies escaped characters. This helps the translator to build a native programming language string.
-
-
-
-sect	Literal Values
-
-Literal character values can be expressed in various ways:
-
-eg
-	'a'		literal char, or	97
-	'a'..'c'	range of chars, or 	97/98/99, or 97..99
-	'abc'		literal string		97 98 99
-	''		empty string		never fails
-
-Literal characters boil down to integer values, and are not restricted to a byte code value. Literal character values will normally be interpreted as Unicode character code points.
-
-sub1	White Space
-
-Grammar rules to match white-space characters are required by most grammars. The #Posix definition for whitespace characters is:
-
-eg
-	space : 9..13/32
-
-This includes space, tab and line-end characters. But the Unicode Zs Separator-space character category includes many other space characters:
-
-eg
-	Zs : 32/0xA0/0x1680/0x180E/0x2000..200A/0x202F/0x205F/0x3000
-
-A more complete rule for white-space characters includes both these rules plus other line and paragraph separator characters:
-
-eg
-	sp : space/Zs/0x85/0x2028..2089
-
-For convenience the :[~] symbol is predefined as :[sp*] to match any white space characters.
-
-sub1	New Line Codes
-
-Unfortunately several different conventions are used for new line codes. The #IETF defines an Internet line-end as carriage-return line-feed:
-
-eg
-	crlf : 13 10
-
-However, the Unix standard is a single line-feed character, and a single carriage-return is also sometimes used, while Unicode defines a different line-end code, and main-frame systems have yet another line-end character. The #XML standard normalizes all of these common standards into the Unix standard line-feed.
-
-A new-line rule to match all these common conventions can be defined as:
-
-eg
-	nl : 13 (10/0x85)? / 10 / 0x85 / 0x2028
-
-For convenience the :[$] symbol is predefined as :[nl] to match a line break.
-
-
-sub1	Any Character
-
-The symbol ":[_]" is defined to match any character code, and this can sometimes be useful, but is best avoided since it will match control code characters, permanently undefined characters, surrogate pair characters, and more. An XML document allows almost any Unicode character, but that is not the same as any code value. A reasonable set of characters compatible with XML 1.1 can be defined as:
-
-eg
-	char: 8..10/13/0x20..7E/0x85/0xA0..D7FF/0xE000..FDCF/0xFDC0..FFFD/0x10000..10FFFD
-
-Replicating this sort of definition is cumbersome and tedious, a better way is to use an external reference to a library of common standards.
-
-
-sect	External References
-
-Gist can refer to rules defined in an external grammar. This enables a grammar to be composed in modules, and supports the use of common standard rules.
-
-An external reference starts with a grammar name then a dot prefix in front of the rule name (as in fully qualified Java names). For example, a :digit rule can refer to the :Nd, Numeric-digit defined in a :[Unicode] grammar:
-
-eg
-	digit = Unicode.Nd
-
-References with the same external name may use a "catch-all" rule to "import" another grammar:
-
-eg
-	_ = Unicode._     -- or:  _ = Unicode
-
-Rule names must be unique within a grammar, but external references can import different rules from different grammars that have the same rule name. The parse tree nodes use rule names, but they can be distinguished by their path names in the parse tree. Grammars are named in a separate name space, and these names do not appear in the parse tree.
-
-
-sect	Negation
-
-The not-predicate :[!X] says that an expression :X will ~not match.
-
-Negation is a very powerful tool to simplify grammar rules and to increase their expressive power. The Gist negation is the same as the #PEG negation, but other grammar languages provide different treatments, like most traditional context-free grammar languages #ABNF has no negation, while the #XML #EBNF has two different forms, neither of which are very satisfactory.
-
-A simple use of negation is to exclude particular characters from a character set. For example, to match a quoted string:
-
-eg
-	quote : quot (!quot char)* quot
-	quot  : 0x22
-	char  : 9..126
-
-Another way to express this is to use the expression: :[(char-quote)] which will match a :char except if a :quote would match, this is exactly the same as: :[(!quot char)], but it may be easier to read:
-
-eg
-	quote : quot (char-quot)* quot
-
-The parser can compile either of these rules to the equivalent rule:
-
-eg
-	quote : 0x22 (0x9..21/0x23..FE)* 0x22
-
-The regular expression notation :[[^"]*] represents zero or more characters that are ~not a quote character, and this looks even simpler, but it is less satisfactory since the domain of all such characters is not specified in the grammar. For example it will include zero, other control codes and Unicode non-characters. In fact the use of this notation in the EBNF XML 1.0 specification introduced errors in that grammar.
-
-The :[!] notation is not restricted to defining character-sets, it works just as well with a string (or any other expression). For example, to specify the syntax for comments of this form: :[/* comment lines... */] where the comments may include any number of :char while there is ~not a match for the terminator :['*/'] characters:
-
-eg
-	comment : '/*' (!'*/' char)* '*/'
-	char    : 0x9..10FFFD
-
-As before, the expression: :[(char-'*/')] can be used to express the same thing. It will match a :char except if a :['*/'] would match, but in this case there is no way to reduce this into a simple character set.
-
-A positive assertion that a rule ~would match, but without matching any input, can be expressed as :[!!x], and this can also be written as :[&x], the PEG notation.
-
-eg
-	&X	-- look-ahead predicate confirms that X would match
-
-Negation of an arbitrary rule is a powerful concept and it allows a grammar to specify some languages that are not context-free.
-
-
-
-sect	Context Free Grammars
-
-The examples shown earlier are quite typical, and they can all be read as ~[one-match] rules that make a committed choice to the first match. The rules look very familiar as context free grammar rules, but closer inspection will reveal that the traditional ~[multi-match] interpretation is not required. Gist is a form of Parser Expression Grammar, #PEG, which provides a formal technical base for one-match grammar rules.
-
-A Gist grammar is based on one-match rules to allow the rules to be efficiently executed. A one-match rule makes a committed choice, so once a choice option matches any other options become irrelevant. If a rule fails later then earlier committed choices will be abandoned without exploring any other options (like a programming language conditional-OR). A context-free grammar rule is multi-match and a later failure explores all earlier options.
-
-In practice most grammars do not require a multi-match interpretation, but some traditional multi-match rules may need to be re-written as one-match rules. For example a traditional grammar, or a regular expression, allows you to express any number of digits ending with a "0" as:
-
-eg
-	zend ::= digit* '0'
-
-This will never work as one-match rule since the digits will all be matched by the :[digit*] rule and there will never be a digit for the final :['0'] to match. The multi-match rule can "back-off" to a shorter prefix in order to match a final :['0'].
-
-A "one-match" rule to express the same thing can be written as:
-
-eg
-	zend : ('1'..'9'* '0')*
-
-As a form of PEG grammar a Gist grammar is incomparable with a context-free grammar. There are (rare) examples of context-free grammar rules that can not be translated into PEG rules, and there are PEG rules (using negation) that can not be translated into context-free grammar rules.
-
-
-sect	Context Sensitive Grammars
-
-Almost all computer languages can be defined with a context-free grammar or a PEG grammar, and the vast majority of practical applications are well covered. But there are a few important exceptions that require context-sensitive grammar rules. Gist can express some context-sensitive grammars.
-
-Sometimes the context-sensitive constraints do not need to be enforced by the parser, and an application program can process the parse tree later to verify the required constraints. The XML grammar is an example of this, the grammar can be expressed as a context-free (or PEG) that does not enforce several constraints, including the constraint that start and end tags must be the same name. However there are some grammars that can not be parsed without a context-sensitive grammar.
-
-sub1	The Same Match Operator
-
-A language with an expression that starts with a particular label and must end with the same label requires a context-sensitive grammar. A context-free grammar would require a rule for every possible label, which may not be practical or possible.
-
-Gist provides a prior match operator :[@X]:
-
-eg
-	S = X Y @X
-
-The :[@X] matches the same string that the previous :X matched, and since Gist is a top-down recognizer this will have already been matched. This can be implemented by looking back into the (partial) parse tree, finding the previous :X, and using the value of that match to match the same string again.
-
-The fact that an XML element's start and end names must match is expressed as a constraint, outside the context-free grammar:
-
-eg
-	element = '<' name '>' content '</' name '>'  -- same_match 'name'
-
-Gist allows this constraint to be included in the grammar:
-
-eg
-	element = '<' name '>' content '</' @name '>'
-
-Notice that the :content may include a nested :element so the prior :name is not simply the last time that the :[name] rule was matched. The parse tree provides the context for the :[@name] operator to search back through the previous sibling nodes to find the previous :name node. The search may continue prior to the parent node through its prior siblings, and so on back to the root of the parse tree. This procedure will work in a recursive descent parser even when all the parent nodes have not yet been created.
-
-It is not always possible to postpone a same-match constraint, and in these cases the constraint must be enforced in the grammar. Examples include the multi-part MIME message format, the here-documents in the Ruby language, and in general any indentation nested block structure such as the indentation and off-side rules for Python and Haskell.
-
-A Ruby "here-document" allows blocks delimited by a distinct identifier, like this:
-
-eg
-	text = <<-id1234
-	A "here document" is useful since it can contain
-	anything except a line with only id1234...
-	id1234
-
-The :id1234 can be any identifier, and the Gist grammar for this can be expressed as:
-
-eg
-	here_doc = '<<-' id hdoc end
-	hdoc     : nl (!end line nl)*
-	end      : blank* @id nl
-	id       : alpha alnum*
-	line     : print*
-
-The full Ruby syntax is more complicated, but this is the gist of it.
-
-sub1	Off-side Rules
-
-A computer programming language is said to employ an  #[off-side] rule if it uses indentation to express nested scope of declarations.
-
-The ABNF specification uses an off-side rule to allow a grammar rule to continue on the next line provided that each following line has a larger inset than the inset of the first line of the rule. This is simple to define informally, and it is easy to use, but it requires a context-sensitive grammar since the inset margin for the first line of a rule can be an arbitrary width.
-
-The :[@] same-match operator can be used to define this off-side rule. It allows subsequent lines to be "folded" under the first line with a larger inset:
-
-eg
-	lines  = inset line (fold line)*
-	inset  : sp*  -- any width space
-	fold   : nl @inset sp+  -- a longer space on the next line
-
-In general an inset text block can be specified as a number of lines with the same whitespace inset:
-
-eg
-	block  = inset line (nl @inset line)*
-	inset  : blank*
-
-This can be extended to an indentation structure with nested blocks:
-
-eg
-	block  = inset line (nl (&indent block / @inset line))*
-	inset  : blank*
-	indent : @inset blank
-
-The :[&] predicate checks if a rule matches without consuming any input, so the :[&indent] will match the first line of a nested block with an indent that is larger than the current inset.
-
-An interesting application is to check for a miss-match between the syntax of a programing language and its visual layout. For example, a ambiguous dangling :else is usually associated with the nearest :if, but the visual indentation may conflict with that:
-
-eg
-	if a then
-		if b then x
-	else y
-
-Gist grammar rules can be defined to generate the standard nesting: :[(if a then (if b then x else y))], or using the :[@] operator it can define the parse tree corresponding to the visual indentation: :[(if a then (if b then x) else y)].
-
-eg
-	expr = if / ...
-	if   = inset 'if' test 'then' expr (@inset 'else' expr)?
-
-
-sub1	Precondition Predicates
-
-A precondition is some element in the input text that allows the grammar to discriminate between different grammar rules that would otherwise be ambiguous. For example, to distinguish a European from a US date format we could write :["d/m/y 9/11/2001"], for a Euopean date, and :["m/d/y 9/11/2001"], for a US date.
-
-The format key :["d/m/y"] or :["m/d/y"] acts as a precondition that selects the appropriate grammar rules:
-
-eg
-	Date = 'd/m/y' sp day '/' month '/' year
-	     / 'm/d/y' sp month '/' day '/' year
-
-But it is tedious to require that the format key to be repeated prior to every date, so we might like to allow the format key to appear only once, as a precondition early in the input text. Multiple dates that occur later in the text will depend on the preselector. A context-free grammar to express this is quite awkward since the grammar rules have to be split into two sets of rules following the rule that matches the precondition. A larger grammar with more preconditions becomes quite impractical.
-
-The next grammar uses a :select rule that can be matched matched early in a input, and this rule generates either a :dmy or a :mdy terminal node in the parse tree. The :Date rule can then use the :[@dmy] (or :[@mdy]) to look back in the parse tree and determine if a :dmy (or :mdy) has a prior match. The trick is that these rules match an empty string, so they will always match again at the current position:
-
-eg
-	select = 'd/m/y' dmy / 'm/d/y' mdy
-	dmy    : ''
-	mdy    : ''
-	...
-	Date = @dmy sp day '/' month '/' year
-	     / @mdy sp month '/' day '/' year
-
-The :dmy or :mdy are used as preconditions, to match a :Date one or other of them must appear earlier in the parse tree.
-
-
-sub1	Unrestricted Grammars
-
-It is almost always possible to design a new grammar with PEG rules, but occasionally there may be features that can not be defined. The context-sensitive features discussed above cope with some of the exceptions. But there are rare cases that just can't be defined without a full phrase structure grammar that can express an unrestricted grammar, which is equivalent to a Turning machine and covers everything that can be computed.  Gist has an ~event element as an escape-hatch to allow a grammar rule to invoke an external programming language method.
-
-
-sect	Events
-
-Events provide an escape mechanism to enable a Gist parser to interact with an external application program. They can be used as a debug tool, and they enable an application to process events "on-the-fly" as the parse proceeds. The event interface can even be used to allows an application program to take over control of the parser. It is best to avoid events in shared grammar specifications.
-
-An :[<event>] can be inserted anywhere in a grammar, and whenever the parser reaches that point in evaluating a grammar rule it will invoke an interface or generate a event message, and wait for the application environment to respond. A default event handler can simply print out the name of the event and a progress report to trace the progress of the parser showing the scanner position in the input string.
-
-An event interface allows a parser to send parsed terms to an application before a complete parse tree is constructed. This can be useful if the parse tree is expected to be very large, or if the input is a stream with an unknown duration. Any Gist grammar can be used to implement an event driven model by adding named event elements into the grammar rules at any desired point, and writing an application processor to handle the event stream.
-
-The event interface should also allow an application to cause the parse to fail, or to consume additional input,  and to abandon parse tree elements that are no longer required.
-
-Events enable a Gist grammar to implement arbitrary input matchers, constraints and semantic methods.
-
-
-sect	Gist Parser
-
-Gist requires a top down parser. A recursive descent parser is a simple and elegant way to parse grammar rules, but the implementation needs to be extended to handle left recursion, and to address the concern that a grammar may (at least in theory) require an exponential parse time #Parsing.
-
-A cache memory for parse results, called memos, can be used to implement left recursion, and also to control any exponential time explosion. For a Parser Expression Grammar a packrat parser uses a cache to achieve a linear parse time performance #PEG.
-
-There is a conflict between the use of memos for left recursion and their general use for performance. A memo can only be used for a rule that has a fixed result, and not all Gist rules generate a fixed result. The context sensitive operator :[@] or an :[<event>] may not have fixed results, and left recursive rules are not fixed since they contain nested results that match from the same input position.
-
-A memo cache also has a memory and performance overhead of its own, and for simple grammars the penalty can be larger than the benefit.
-
-Fortunately it is possible to use a lazy cache scheme that only employs a memo when it is both safe and beneficial. The lazy cache scheme uses light-weight memos that enable left recursion and enhance performance, but impose very little overhead, see: #[Lazy Cashin Parser].
-
-For an implementation of a Gist parser in Java see: #[Gist in Java].
-
-Of course a Gist parser is fully automated, so there is no opportunity to hand craft the parse tree node structure or fine tune the parser machinery. For ultimate performance and application integration you may need to move to a custom crafted parser for your particular grammar. The #ANTLR parser generator project provides good tools and documentation to enable you to do that. Terence Parr's book #[Language Implementation Patterns] provides a excellent explanation of the design issues involved in crafting parsers and interpreters.
-
-
-
-sect	Conclusions
-
-Gist provides a grammar language that can be automatically executed to generate a well defined parse tree structure.
-
-The Gist rules are a form of #PEG (Parser Expression Grammar) that can be seen as a way to match input strings, as against the traditional production rules that are used to generate sentences in a language.
-
-It is useful to be able to directly execute a grammar specification even if the end objective is a paper specification rather than an operational parser. Iterative modifications and corrections of grammar specifications are essential during development, and Gist allows direct incremental testing of a grammar as it is developed.
-
-A universal parser makes it easier to design and experiment with grammar rules for an application, rather than trying to reverse engineer them from a prototype program. It also makes it much easier to modify and extend an application to accept new input formats. 
-
-Every rule in a traditional context-free grammar is a multi-match rule, but in practice only one-match PEG rules are needed. Context-free languages that can not be expressed with one-match rules do exist, but they do not seem to be needed in practice. 
-
-On the other hand some practical applications are beyond a context-free grammar and Gist has context-sensitive extensions to cover these requirements.
-
-Gist demonstrates a concise formal grammar specification with minimal extra notation that enables direct execution with a practical universal parser.
+You will find a collection of documents and software at: @[http://spinachtree.org/gist]
 
 
 sect	References
 
 refs
 	ABNF
-		Augmented Bakus Naur Form, ~see: @[http://www.ietf.org/rfc/rfc5234.txt?number=5234]
-	
+		Augmented Bakus Naur Form, ~see: @[http://www.ietf.org/rfc/rfc5234.txt?number=5234]	
 	ANTLR
 		ANTLR Another Tool for Language Recognition, @[http://www.antlr.org/]
-
 	BNF
 		Bakus Naur Form, see: @[http://en.wikipedia.org/wiki/BNF]
-
 	EBNF
-		Extended Bakus Naur Form, see: @[http://en.wikipedia.org/wiki/Extended_Backus_Naur_Form] and the XML version of EBNF: @[http://www.w3.org/TR/REC-xml/]
-		
+		Extended Bakus Naur Form, see: @[http://en.wikipedia.org/wiki/Extended_Backus_Naur_Form] and the XML version of EBNF: @[http://www.w3.org/TR/REC-xml/]		
 	Gist
-		Grammar Intrinsic Syntax Tree, see: @[http://gist.spinachtree.org/gist]
-
+		Grammar Intrinsic Syntax Tree, see: @[http://spinachtree.org/gist]
 	Gist in Java
 		Gist in Java: @[http://spinachtree.org/gist/java]
-
-	grammar theory
-		Grammar theory: @[http://en.wikipedia.org/wiki/Formal_grammars]
-
-	IETF
-		Internet Engineering Task Force, develops and promotes Internet standards:  @[http://en.wikipedia.org/wiki/IETF]
-	JSON
-		JavaScript Object Notation, despite its name it is independent of JavaScript, see: @[http://www.json.org/]
-	Language Implementation Patterns
-		Terence Parr, Create Your Own Domain-Specific and General Programming Languages, ISBN: 978-1-93435-645-6
-		@[http://pragprog.com/titles/tpdsl/language-implementation-patterns]
-	Lazy Cashin Parser
-		A parser designed to implement Gist: @[http://spinachtree.org/gist]
-
-	off-side
-		The use of indentation for programming language scope: @[http://en.wikipedia.org/wiki/Off-side_rule]
-	parser technology
-		Parser technology: @[http://en.wikipedia.org/wiki/Parsing]
-	Parsing
-		see: @[http://en.wikipedia.org/wiki/Parsing]
-	Parsing Techniques
-		Parsing Techniques, A Practical Guide. Dick Grune, Ceriel J. H. Jacobs, Springer, ISBN-13: 978-0-387-20248-8. @[http://www.cs.vu.nl/~dick/PTAPG.html]
 	PEG
 		Parser Expression Grammar: @[http://pdos.csail.mit.edu/~baford/packrat/thesis/]
-	
 	Parser Expression Grammar
 		An analytic formal grammar, see: @[http://en.wikipedia.org/wiki/Parsing_expression_grammar]
-
-	Posix
-		Portable Operating System Interface [for Unix], an IEEE standard that defines ASCII character code sets used in some regular expression implementations. @[http://en.wikipedia.org/wiki/POSIX]
-	
-	RFC 4627
-		JSON data language, IETF standard RFC4267,
-		see: @[http://www.ietf.org/rfc/rfc4627.txt]
-	
-	URI
-		WWW Uniform Resource Identifier: @[http://en.wikipedia.org/wiki/Uniform_Resource_Identifier]
-	
-	XML
-		Extensible Markup Language: @[http://en.wikipedia.org/wiki/XML]
 
 format
 	title	h1:prose
@@ -667,20 +71,21 @@ format
 	para	p:prose
 	eg	pre:text
 	refs	dl:format
+	*	ul:format
 
 prose
-	:_	tt:text
-	~_	em:prose
-	"_"	quote:prose
-	#_	link-id
-	@[_]	link-uri
+	:_	tt
+	~_	em
+	"_"	quote
+	#_	linkID
+	@[_]	link
 
 style
 	.undef { color:red; background-color:yellow; }
 	.title, .author, .date { text-align: center; }
 	.eg { background-color:#FFFDDA; border: thin solid #ECECEC; }
 	dl { font-size:small;}
-	dt { margin-top: 10pt; }
+	dl dd p { margin: 0pt 0pt 10pt 0pt; }
 	.format, .prose, .style { display:none; }
 
 

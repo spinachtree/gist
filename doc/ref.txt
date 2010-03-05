@@ -118,6 +118,18 @@ eg
 
 Literal characters boil down to integer values, which will normally be interpreted as Unicode character code points.
 
+
+sub1	The Same Match Operator
+
+Gist provides a context-sensitive prior match operator :[@X]:
+
+eg
+	S = X Y @X
+
+The :[@X] matches the same string that the previous :X matched by looking back into the (partial) parse tree, finding the previous :X, and using the value of that match, to match the same string again. The search for the first prior match may continue prior to the parent node through its prior siblings, and so on back to the root of the parse tree. If no prior match is found the operator will fail.
+
+---	...
+
 refs
 	The Gist Grammar Language	hhtp://spinachtree.org/gist/into.html
 
@@ -129,21 +141,22 @@ format
 	para	p:prose
 	eg	pre:text
 	refs	dl:format
+	---	hr:none
 
 prose
-	:_	tt:text
-	~_	em:prose
-	"_"	quote:prose
-	#_	link-id
-	@[_]	link-uri
-	^[_]	link-name
+	:_	tt
+	~_	em
+	"_"	quote
+	#_	linkID
+	@[_]	link
+	^[_]	linkName
 
 style
 	.undef { color:red; background-color:yellow; }
 	.title, .author, .date { text-align: center; }
 	.eg { background-color:#FFFDDA; border: thin solid #ECECEC; }
-	dl { font-size:small;}
-	dt { margin-top: 10pt; }
+	dl { font-size:small; }
+	dl dd p { margin: 0pt 0pt 10pt 0pt; }
 	.format, .prose, .style { display:none; }
 
 
