@@ -57,9 +57,9 @@ class Seq extends ParseOp {
 	
 } // Seq
 
-class Select extends ParseOp {
+class Sel extends ParseOp {
 
-	Select(ParseOp[] array) {
+	Sel(ParseOp[] array) {
 		args = array;
 for (ParseOp arg : args) if (arg==null) throw new IllegalArgumentException("null arg... ");
 	}
@@ -83,7 +83,7 @@ for (ParseOp arg : args) if (arg==null) throw new IllegalArgumentException("null
 		return s+")";
 	}
 
-} // Select
+} // Sel
 
 class Repeat extends ParseOp {
 	

@@ -23,17 +23,17 @@ class Boot {
 	/* -- bootstrap grammar.......................
 
 		Gist	= (Rule / ws)*
-		Rule    = name sp defn Body
-		Body    = Seq (ws '/' Seq)*
-		Seq     = (sp Factor Repeat?)+
-		Factor  = Ref / Phrase / Literal / Prior
+		Rule    = name sp defn Sel
+		Sel     = Seq (ws '/' Seq)*
+		Seq     = (sp Fact Rep?)+
+		Fact    = Ref / Literal / Group / Prior
 		Ref     = name
-		Phrase  = '(' Body ws ')'
+		Group   = '(' Sel ws ')'
 		Prior   = '@' name
 		Literal = Quote / Code
 		Quote   = quote ('..' quote)? 
 		Code	= int ('..' int)?
-		Repeat  = '*'/'+'/'?'
+		Rep     = '*'/'+'/'?'
 		defn    : ':'/'='
 		name    : ('a'..'z'/'A'..'Z')+
 		int     : '0'..'9'+
@@ -47,17 +47,17 @@ class Boot {
 	Rule[] rules() {
 		Rule[] rls={
 		rule("Gist",rep(sel(ref("Rule"),ref("ws")))),
-		rule("Rule",seq(ref("name"),ref("sp"),ref("defn"),ref("Body"))),
-		rule("Body",seq(ref("Seq"),rep(seq(ref("ws"),ch('/'),ref("Seq"))))),
-		rule("Seq",rep1(seq(ref("sp"),ref("Factor"),opt(ref("Repeat"))))),
-		rule("Factor",sel(ref("Ref"),ref("Literal"),ref("Phrase"),ref("Prior"))),
+		rule("Rule",seq(ref("name"),ref("sp"),ref("defn"),ref("Sel"))),
+		rule("Sel",seq(ref("Seq"),rep(seq(ref("ws"),ch('/'),ref("Seq"))))),
+		rule("Seq",rep1(seq(ref("sp"),ref("Fact"),opt(ref("Rep"))))),
+		rule("Fact",sel(ref("Ref"),ref("Literal"),ref("Group"),ref("Prior"))),
 		rule("Ref",ref("name")),
-		rule("Phrase",seq(ch('('),ref("Body"),ref("ws"),ch(')'))),
+		rule("Group",seq(ch('('),ref("Sel"),ref("ws"),ch(')'))),
 		rule("Prior",seq(ch('@'),ref("name"))),
 		rule("Literal",sel(ref("Quote"),ref("Code"))),
 		rule("Quote",seq(ref("quote"),opt(seq(ch('.'),ch('.'),ref("quote"))))),
 		rule("Code",seq(ref("int"),opt(seq(ch('.'),ch('.'),ref("int"))))),
-		rule("Repeat",sel(ch('*'),ch('+'),ch('?'))),
+		rule("Rep",sel(ch('*'),ch('+'),ch('?'))),
 		term("defn",sel(ch(':'),ch('='))),
 		term("name",rep1(ch('A','Z','a','z'))),
 		term("quote",seq(cc(39),rep(cc(32,38,40,126)),cc(39))),
@@ -75,7 +75,7 @@ class Boot {
 
 	ParseOp seq(ParseOp... args) { return new Seq(args); }
 
-	ParseOp sel(ParseOp... args) { return new Select(args); }
+	ParseOp sel(ParseOp... args) { return new Sel(args); }
 
 	ParseOp rep(ParseOp arg) { return new Repeat(arg,0); }
 

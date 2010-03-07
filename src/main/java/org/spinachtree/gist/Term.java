@@ -248,12 +248,13 @@ public class Term implements Iterable<Term> {
 		return kid.isText(str);
 	}
 	
-	/**
+/* ----	**
 	To check if term contains a fault message.
 	<p>A fault tag is not a valid rule name: <tt>"-- fault report msg.... "</tt></p>
 	@return true if the tag is a fault report, else false
-	*/	
+	*  /	
 	public boolean isFault() { return tag.startsWith("--"); }
+---*/
 
 	/**
 	get bag value previously assigned by an application

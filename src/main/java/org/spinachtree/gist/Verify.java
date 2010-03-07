@@ -23,8 +23,8 @@ class Verify {
 			for (ParseOp y:seq.args) if (!vacant(y)) return false;
 			return true;
 		}
-		if (x instanceof Select) {
-			Select sel=(Select)x;
+		if (x instanceof Sel) {
+			Sel sel=(Sel)x;
 			for (ParseOp y:sel.args) if (vacant(y)) return true;
 			return false;
 		}
@@ -101,8 +101,8 @@ class Verify {
 			}
 			return null; // can't tell
 */		}
-		if (x instanceof Select) {
-			Select sel=(Select)x;
+		if (x instanceof Sel) {
+			Sel sel=(Sel)x;
 			Chars cs=null;
 			for (ParseOp y:sel.args) {
 				Chars cy=firstChars(y);

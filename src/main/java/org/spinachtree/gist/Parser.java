@@ -7,20 +7,22 @@ import java.util.*;
 class Parser {
 	
 	// Full Gist language grammar, but expressed using Boot grammar language...
-	// Boot does not accept: comments, not !, multi-line rules, name.name refs, ..
+	// Boot does not accept: comments, !, @, multi-line rules, external refs, ..
 
 	public static final String gistGrammar = rules(
-		"Gist    = (xs (Rule/Import))* xs ",
-		"Rule    = name dots? xs defn xs Body ",
-		"Body    = Seq (xs '/' xs Seq)* ", 
-		"Seq     = (Op Factor Repeat?)+ ", 
-		"Op      = s ((',' / minus ) s)? ", 
-		"Repeat  = '+' / '?' / '*' Ints? ", 
-		"Factor  = Ref/Literal/Group/Option/Many/Not/Peek/Prior/Event ", 
+		"Gist    = (xs (Rule/Import) s ';'?)* xs ",
+		"Rule    = name dots? xs defn xs Sel ",
+		"Sel     = Seq (xs '/' xs Seq)* ", 
+		"Seq     = Item (s (',' xs)? Item)* ", 
+		"Item    = Factor Rep? / Prime ",
+		"Rep     = '+'/'?'/'*' Ints? ",
+		"Factor  = Fact (minus Fact)* ",
+		"Fact    = Ref/Literal/Group/Prior/Event ", 
+		"Prime   = Option/Many/Not/Peek ", 
 		"Group   = '(' Exp ')' ", 
 		"Option  = '[' Exp ']' ", 
 		"Many    = '{' Exp '}' ",
-		"Exp     = (Body xs)* ",
+		"Exp     = (Sel xs)* ",
 		"Not     = '!' s Factor ", 
 		"Peek    = '&' s Factor ", 
 		"Prior   = '@' s name ", 
@@ -103,7 +105,8 @@ class Parser {
 	// -----  compile a parse tree from the gist grammar into parse operators... ----
 
 	void compile(Term tree) {
-		// Gist = (xs (Rule/Import))* xs
+	// Gist = (xs (Rule/Import))* xs
+		// Gist = (xs (Rule/Import) s ';'?)* xs
 		if (!tree.isTag("Gist")) { fault(tree.toString()); return; }
 		Term root=tree.child("Rule"); // start rule
 		start=root.text("name");
@@ -143,7 +146,7 @@ class Parser {
 	}
 	
 	Rule compileRule(String name,Term ref,Rule host) {
-		// Rule = inset name dots? sp defn sp Body
+		// Rule = name dots? xs defn xs Sel 
 		Rule rule=ruleMap.get(name);
 		if (rule==null) {
 			rule=new Rule(name); // undefined rule
@@ -166,7 +169,7 @@ class Parser {
 		} else if (term.tag=="Rule") {
 			rule.elide=term.child("dots")!=null;
 			rule.term=term.has("defn",":");
-			rule.body=compileChoice(term.child("Body"),rule);
+			rule.body=compileSel(term.child("Sel"),rule);
 		}
 		return rule;
 	}
@@ -185,14 +188,10 @@ class Parser {
 		if (rule==null) rule=compileRule(name,ref,host);
 		if (rule.body!=null) { // rule has been compiled...
 			if (!rule.fixed) host.fixed=false;
-			//if (!rule.fixed && elide)
-			//	fault("Can't elide ref: "+name+", it may be recursive or irregular... ");
 			if (elide || host.term || rule.elide) return rule.body;
 			return new Ref(name,elide,host,ruleMap,rule);
 		} // else rule may be undefined or in a ref loop
-        host.fixed=false; // safe, unknown resolution may be LR...
-		//if (!host.fixed && host.elide)
-		//	fault("Can't elide: "+host.name()+", it may be recursive or irregular... ");
+        	host.fixed=false; // safe, unknown resolution may be LR...
 		return new Ref(name,elide,host,ruleMap,null);
 	}
 
@@ -218,19 +217,19 @@ class Parser {
 		return new Ref(name,elide,host,ruleMap,rule);
 	}
 
-	ParseOp compileChoice(Term body,Rule host) {
-		// Body = Seq (sp '/' Seq)*
+	ParseOp compileSel(Term sel,Rule host) {
+		// Sel = Seq (xs '/' xs Seq)* 
 		ArrayList<ParseOp> args=new ArrayList<ParseOp>();
-		for (Term term: body) if (term.tag()=="Seq") {
+		for (Term term: sel) if (term.tag()=="Seq") {
 			ParseOp arg = compileSeq(term,host);
 			if (!union(args,arg)) args.add(arg);
 		}
 		if (args.size()==1) return args.get(0);
 		for (int i=0; i<args.size()-1; i++) {
 			if (Verify.vacant(args.get(i))) // x* / y  => fault
-				return fault(host,body,"can't reach all options...");
+				return fault(host,sel,"can't reach all options...");
 		}
-		return new Select(args.toArray(new ParseOp[0]));
+		return new Sel(args.toArray(new ParseOp[0]));
 	}
 
 	boolean union(ArrayList<ParseOp> args, ParseOp w) {
@@ -245,38 +244,28 @@ class Parser {
 	}
 
 	ParseOp compileSeq(Term seq, Rule host) {
-		// Seq = (Op Factor Repeat?)+
-		// Op  = sp ((','/minus) xs)?
+		// Seq = (sp Fact Rep?)+  -- Boot
+		// Seq = Item (s (',' xs)? Item)*  
 		ArrayList<ParseOp> args=new ArrayList<ParseOp>();
-		Term term=seq.child();
-		while (term!=null) {
-			String tag=term.tag();
-			if (tag=="Factor")
-				args.add(compileFactor(term,host));
-			else if (tag=="Repeat") {
-				int k=args.size()-1;
-				args.set(k,compileRepeat(args.get(k),term));
-			} else if (tag=="Op" && term.has("minus")) { // x-y => (!y x)
-				int k=args.size()-1;
-				if (k<0) return fault(host,seq,"unexpected unary -y: x-y => !y x ...");
-				term=term.next(); // Op Factor
-				ParseOp x=args.get(k); // x-y
-				ParseOp y=compileFactor(term,host);
-				ParseOp z; // z = (x-y) / (!y x)
-				if (x instanceof Chars && y instanceof Chars)
-					z=((Chars)x).exclude((Chars)y);
-				else
-					z=new Seq(new ParseOp[] {new Negate(y),x});
-				args.set(k,z);
-			}			
-			term=term.next();
+		for (Term term: seq) {
+			if (term.tag()=="Item") {
+				ParseOp item=compileItem(term,host);
+				if (item instanceof Seq) // flatten...
+					for (ParseOp op:(((Seq)item).args)) args.add(op);
+				else args.add(item);
+			} else if (term.isTag("Fact")) // Boot..
+				args.add(compileFact(term,host));
+			else if (term.isTag("Rep")) {
+				int i=args.size()-1;
+				args.set(i,compileRepeat(args.get(i),term));
+			}
 		}
 		for (int i=0;i<args.size()-1;i++) { // reduce !x y ....
 			ParseOp x=args.get(i);
 			if (isNegateChar(x)) { // !x 
 				Chars cx=(Chars)((Negate)x).arg;
 				ParseOp y=args.get(i+1);
-				if (y instanceof Chars) { // !x y => y-x
+				if (y instanceof Chars) { // !x y => y.exclude(x)
 					args.set(i,((Chars)y).exclude(cx));
 					args.remove(i+1);
 				} else if (isNegateChar(y)) {  // !x !y => !(x/y)
@@ -297,12 +286,40 @@ class Parser {
 		return new Seq(args.toArray(new ParseOp[0]));
 	}
 
+	ParseOp compileItem(Term item, Rule host) {
+		// Item = Factor Rep? / Prime
+		if (item.has("Prime")) return compilePrime(item.child("Prime"),host);
+		ParseOp factor=compileFactor(item.child("Factor"),host);
+		if (item.has("Rep")) return compileRepeat(factor,item.child("Rep"));
+		return factor;
+	}
+
+	ParseOp compileFactor(Term factor, Rule host) {
+		// Factor = Fact (minus Fact)*
+		Term fx=factor.child();
+		if (!factor.has("minus")) return compileFact(fx,host);
+		Term minus=fx.next();
+		ArrayList<ParseOp> args=new ArrayList<ParseOp>();
+		ParseOp x=compileFact(fx,host); // x-y1-y2...
+		while (minus!=null) {
+			ParseOp y=compileFact(minus.next(),host);
+			if (x instanceof Chars && y instanceof Chars)
+				x=((Chars)x).exclude((Chars)y);
+			else // x = (x-y) / z = (!y x)
+				args.add(new Negate(y));
+			minus=minus.next().next();
+		}
+		args.add(x);
+		if (args.size()==1) return args.get(0);
+		return new Seq(args.toArray(new ParseOp[0]));
+	}
+
 	boolean isNegateChar(ParseOp x) { // !'x'
 		return (x instanceof Negate && ((Negate)x).arg instanceof Chars);
 	}
 
 	ParseOp compileRepeat(ParseOp factor, Term rep) {
-		// Repeat  = '+' / '?' / '*' Ints?
+		// Rep  = '+' / '?' / '*' Ints?
 		if (rep.isText("*")) return new Repeat(factor,0,-1);
 		if (rep.isText("+")) return new Repeat(factor,1,-1);
 		if (rep.isText("?")) return new Repeat(factor,0,1);
@@ -316,40 +333,43 @@ class Parser {
 		return new Repeat(factor,min,max); // x*min..max
 	}
 
-	ParseOp compileFactor(Term factor, Rule host) {
-		// Factor = Ref / Literal / Phrase / Not / Peek / Prior
-		Term x=factor.child();
+	ParseOp compileFact(Term fact, Rule host) {
+		// Fact = Ref/Literal/Group/Prior/Event
+		Term x=fact.child();
 		String tag=x.tag();
 		if (tag=="Ref") return compileRef(x,host);
 		if (tag=="Literal") return compileLiteral(x,host);
-		if (tag=="Phrase") return compilePhrase(x,host); // Boot
 		if (tag=="Group") return compileGroup(x,host);
+		if (tag=="Prior") return compilePrior(x,host);
+		if (tag=="Event") return new Event(x,host);
+		throw new UnsupportedOperationException("Fact "+x);
+	}
+
+	ParseOp compilePrime(Term prime, Rule host) {
+		// Prime = Option/Many/Not/Peek
+		Term x=prime.child();
+		String tag=x.tag();
 		if (tag=="Option") return compileOption(x,host);
 		if (tag=="Many") return compileMany(x,host);
 		if (tag=="Not") return compileNot(x,host);
 		if (tag=="Peek") return compilePeek(x,host);
-		if (tag=="Prior") return compilePrior(x,host);
-		if (tag=="Event") return new Event(x,host);
-		throw new UnsupportedOperationException("Factor "+x);
-	}
-
-	ParseOp compilePhrase(Term phrase, Rule host) {
-		// Phrase  = '(' Body ws ')' -- Boot
-		return compileChoice(phrase.child("Body"),host);
+		throw new UnsupportedOperationException("Prime "+x);
 	}
 
 	ParseOp compileExp(Term exp, Rule host) {
-		// Exp = (Body xs)*
+		// Exp = (Sel xs)*
 		ArrayList<ParseOp> args=new ArrayList<ParseOp>();
-		for (Term body: exp)
-			if (body.tag()=="Body") 
-				args.add(compileChoice(body,host));
+		for (Term sel: exp)
+			if (sel.tag()=="Sel") 
+				args.add(compileSel(sel,host));
 		if (args.size()==1) return args.get(0);
 		return new Seq(args.toArray(new ParseOp[0]));
 	}
 
 	ParseOp compileGroup(Term term, Rule host) {
-		// Group  = '(' Exp ')' 
+		// Group  = '(' Exp ')'  or  Boot: '('  Sel ws')'
+		// Exp     = (Sel xs)*
+		if (term.has("Sel")) return compileSel(term.child("Sel"),host);
 		return compileExp(term.child("Exp"),host);
 	}
 
