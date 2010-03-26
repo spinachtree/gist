@@ -1,4 +1,3 @@
-
 package org.spinachtree.gist;
 
 import java.util.*;
@@ -55,7 +54,7 @@ public class Gist {
 	// 	}
 	// }
 
-	String grammar; // source rulues
+	String grammar; // source rules
 	Parser parser; // parser for this grammar
 	
 
@@ -74,8 +73,7 @@ public class Gist {
 		if (lines.length<1) throw new IllegalArgumentException("Missing grammar...");
 		else if (lines.length==1) grammar=lines[0];
 		else grammar=concat(lines);
-//		Term gist=Parser.gist(grammar);
-		parser=new Parser(grammar);
+		parser=new Parser(new GistGrammar(grammar));
 	}
 
 	// /**
@@ -161,6 +159,8 @@ public class Gist {
 		parser.action=action;
 		return this;
 	}
+	
+//	static public String gistGrammar() { return Parser.gistGrammar; }
 
 	// -- package internals -----------------------------------------------------------------
 

@@ -13,23 +13,29 @@
   <target name="build" depends="clean,init,compile,jar,test"/>
 
 <!-- gist package......................................................................... -->
-	
+
+	<target name="compile">
+	    <javac srcdir="${src}" destdir="target/main" />
+	</target>
+
+<!--	
     <target name="compile" depends="parser">
-        <javac srcdir="${src}" destdir="target/main" includes="Gist.java"/>
+        <javac srcdir="${src}" destdir="target/main" 
+		includes="Gist.java,GistGrammar.java"/>
     </target>
     <target name="parser" depends="parseOps">
         <javac srcdir="${src}" destdir="target/main"
-		includes="Parser.java,Boot.java,Verify.java"/>
+		includes="Parser.java,Boot.java"/>
     </target>
     <target name="parseOps" depends="scan">
         <javac srcdir="${src}" destdir="target/main"
-		includes="Chars.java,Rule.java,ParseOps.java"/>
+		includes="Op.java,Chs.java,Rule.java,Action.java"/>
     </target>
     <target name="scan">
         <javac srcdir="${src}" destdir="target/main"
-		includes="Term.java,Scan.java,Action.java,Library.java"/> 
+		includes="Term.java,Library.java,Transform.java"/> 
     </target>
-
+-->
     <!-- build jar....................................................................... -->
 
     <target name="jar" depends="compile">

@@ -281,7 +281,7 @@ public class Term implements Iterable<Term> {
 	*/	
 	public String toString() {
 		StringBuilder sb=new StringBuilder();
-		if (isFault()) faultDisplay(sb);
+		if (tag.startsWith("--")) faultDisplay(sb);
 		else treeDisplay(sb,"\n","\t",false);
 		return sb.toString();
 	}

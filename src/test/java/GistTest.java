@@ -30,7 +30,7 @@ public class GistTest {
   		assertTrue(date.child().next("day").isText("3"));
   }
 
-	@Test
+/*	@Test
 	public void repeatTest() {
 	String repTest= 
 	"	reps  = alpha digit* alpha+ digit*3 alpha*2.._ digit*3..5 0..100*  \n"+
@@ -42,11 +42,11 @@ public class GistTest {
 	assertTrue(t.isTag("reps"));
 	
 	}
-
+*/
 	@Test
 	public void charsTest() {
 		Gist nums=new Gist(
-		"	nat  = odd+ even*5 low* hi+            ",
+		"	nat  = odd+ even* low* hi+            ",
 		"	codes: '0'..'9'                        ",
 		"	even : !'1' !'3' !('5'/'7'/'9') codes  ",
 		"	odd  : !('6'/'2'/'0') !'8' !'4' codes  ",
@@ -55,9 +55,26 @@ public class GistTest {
 		"	mid  : !'0'..'4' !'6'..'9' codes       ",
 		"	void : !0xE..FF hi                     ",
 		"	char : !34 !92 0x20..10ffff            ");
-
-		Term t=nums.parse("97135246800569");
+		//System.out.println(nums.inspect());
+		Term t=nums.parse("9713524680569");
 		assertTrue(t.isTag("nat"));
+	}
+
+	@Test
+	public void butNotTest() {
+		Gist nobut=new Gist(
+		"	nob  = odd+ even* low* hi+            ",
+		"	codes: '0'..'9'                        ",
+		"	even : codes-!'1'-!'3'-!('5'/'7'/'9')  ",
+		"	odd  : codes-!('6'/'2'/'0') -!'8' -!'4' ",
+		"	low  : codes-!'6'..'~'                 ",
+		"	hi   : codes -!'0'..'5'                 ",
+		"	mid  : codes-!'0'..'4'-!'6'..'9'       ",
+		"	void : hi-!0xE..FF                    ",
+		"	char : 0x20..10ffff-!34-!92            ");
+		System.out.println(nobut.inspect());
+		Term t=nobut.parse("9713524680569");
+		assertTrue(t.isTag("nob"));
 	}
 
 	@Test
@@ -71,11 +88,13 @@ public class GistTest {
 		"	alpha: 'a'..'z'/'A'..'Z'       	\n";
 	
 		Gist ebnf=new Gist(ebnfTest);
+		//System.out.println(ebnf.inspect());
 		Term e=ebnf.parse("foo + bar -flim.flam");
 		//System.out.println(e);
 		assertTrue(e.isTag("ebnf"));
 	}
 
+/*
 	@Test
 	public void leftTest() {
 		String leftTest=
@@ -134,19 +153,7 @@ public class GistTest {
 		am=ambig.parse("1+2*(3-4/2+1)+5");
 		assertTrue(am.isTag("Exp"));
 	}
-
-/*	@Test
-	public void importTest() {
-		String importTest=
-		"	Imp   = letter Nd (letter/digit)* \n"+
-		"	digit ->  gist.pragma#Nd        \n"+
-		"	_     ->  gist.pragma	\n";
-		
-		Gist imp=new Gist(importTest);
-		Term t=imp.parse("x42");
-		//System.out.println(t);
-		assertTrue(t.isTag("Imp"));
-	}*/
+*/
 
 	@Test
 	public void importTest() {
