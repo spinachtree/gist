@@ -1,10 +1,10 @@
 package org.spinachtree.gist;
 
 /*
-	Op is a parser operation that implements the parse() method predicate.
+	Op is a parser operation that implements the parse(par) method predicate.
 	
 	Ops are built into a tree with And and OR Op arguments. The And Op is invoked
-	if the Op's match() method succeeds, and the Or Op is called if it fails.
+	if the Op's match(par) method succeeds, and the Or Op is called if it fails.
 	
 	Null And => true (the Op is all done). The And links represents a sequence.
 	Null Or  => false (the Op has faild and has no other option to try). Or is a choice.
@@ -14,7 +14,7 @@ package org.spinachtree.gist;
 	The parent Op class contains the logic to traverse And sequences and  Or choices.
 	
 	The bulk of the work is done by two Op subclasses:
-		ref	-- a rule name reference, invokes the Op.parse() for a rule.
+		ref	-- a rule name reference, returns the rule.parse(par) result.
 		chs	-- match next input character into a set of char code ranges.
 	
 	Parse tree building and left recursion is handled in the Rule Op.
@@ -25,8 +25,6 @@ package org.spinachtree.gist;
 	
 class Op {
 	
-	Parser par; // the parser contains the input string and parse tree result.
-
 	Op And=null; // sequence link...  x , y , z , ...
 	Op Or=null;  // choice link...    x / y / z / ...
 
@@ -68,25 +66,27 @@ class Op {
 	}
 	Op copyMe() { todo(); return null; }
 	
-	boolean parse() {
+	// parse time methods....................................................
+	
+	boolean parse(Parser par) {
 		int p=par.pos;
 		Term t=par.tip;
-		boolean result = Rep? loop() : match();
+		boolean result = Rep? loop(par) : match(par);
 		if (result) {
 			if (And==null) return true;
-			if (And.parse()) return true;
-			if (OrMe) return (Or.Or==null || Or.Or.parse());
+			if (And.parse(par)) return true;
+			if (OrMe) return (Or.Or==null || Or.Or.parse(par));
 		} 
 		if (Or==null || OrMe) return false;
 		par.reset(p,t);
-		return Or.parse();
+		return Or.parse(par);
 	}
 
-	boolean loop() { // elide recursion...
+	boolean loop(Parser par) { // elide recursion...
 		int i=par.pos;
 		Term t=par.tip;
 		int k=0;
-		while (k<max && match()) {
+		while (k<max && match(par)) {
 			k+=1; 
 			int j=par.pos;
 			if (i<j) { i=j; t=par.tip; }
@@ -98,6 +98,12 @@ class Op {
 		return true;
 	}
 
+	boolean match(Parser par) { crash(); return false; }
+	
+	// reports and faults...........................................................
+
+	String me() { return "<op>"; }
+	
 	public String toString() {
 		String rep="";
 		if (Rep)
@@ -111,13 +117,9 @@ class Op {
 		return "("+me()+rep+","+And+"/"+Or+")";
 	}
 	
-	boolean match() { crash(); return false; }
+//	Op fault(Rule rule, Term term, String msg) { return par.fault(rule,term,msg); }
+	Op fault(String msg) { throw new GistFault(msg); }
 
-	Op fault(Rule rule, Term term, String msg) { return par.fault(rule,term,msg); }
-	Op fault(String msg) { return par.fault(msg); }
-
-	String me() { return "<op>"; }
-	
 	void todo() { crash(" not implemented yet... "); }
 	void crash() { crash(" internal fault... "); }
 	void crash(String msg) { throw new IllegalStateException(msg); }
@@ -125,47 +127,47 @@ class Op {
 
 
 class Ref extends Op {
-	Ref(Parser par, String name) {
-		this.par=par;
+	Ref(Rules rules, String name) {
+		this.rules=rules;
 		this.name=name;
 		this.elide=false;
-		resolveTarget(); // if possible
+		resolveTarget();
 	}
 	
-	Ref(Parser par, Rule host, Rule rule, boolean elide) {
-		this.par=par;
+	Ref(Rules rules, Rule host, Rule rule, boolean elide) {
+		this.rules=rules;
 		this.host=host;
 		this.elide=elide;
 		this.rule=rule;
 		this.name=rule.name;
+		resolveTarget();
 	}
 	
 	void resolveTarget() {
-		if (rule==null) rule=par.getRule(name);
-		if (rule==null || rule.body==null) return;
+		if (rule==null) rule=rules.getRule(name);
+		if (rule==null || rule.body==null) return; // to resolve at run-time...
 		if (elide || (host!=null && host.term) || rule.elide) target=rule.body;
 		else target=rule;
 	}
 	
+	Rules rules;
 	String name;
 	boolean elide;
 	Rule host, rule;
 	Op target;
-	
-	Op copyMe() { return new Ref(par,name); }
+
+	Op copyMe() { return new Ref(rules,host,rule,elide); }
 	
 	boolean orMe(Op x) { 
 		if (x instanceof Ref) return name.equals(((Ref)x).name);
 		return false;
 	}
 	
-	boolean match() {
-//System.out.println(name+" pos="+par.pos+" OrMe="+OrMe);
+	boolean match(Parser par) {
 		if (target==null) {
 			resolveTarget();
 			if (target==null) fault("No target for Ref: "+name);
-		}
-		return target.parse();
+		} return target.parse(par);
 	}
 
 	String me() { return name; }
@@ -173,16 +175,15 @@ class Ref extends Op {
 }
 
 class Str extends Op {
-	Str(Parser par, String str) {
-		this.par=par;
+	Str(String str) {
 		this.str=str.substring(1,str.length()-1);
 	}
 
 	String str;
 	
-	Op copyMe() { return new Str(par,str); }
+	Op copyMe() { return new Str(str); }
 
-	boolean match() {
+	boolean match(Parser par) {
 		int cc=str.codePointAt(0);
 		if (par.chr!=cc) return false;
 		int i=0;
@@ -200,41 +201,35 @@ class Str extends Op {
 }
 
 class Grp extends Op {
-	Grp(Parser par, Op op) {
-		this.par=par;
-		this.op=op;
-	}
+	Grp(Op op) { this.op=op; }
 	
 	Op op;
 
-	Op copyMe() { return new Grp(par,op); }
+	Op copyMe() { return new Grp(op); }
 
-	boolean match() {
+	boolean match(Parser par) {
 //System.out.println("Grp: "+me()+" pos="+par.pos+" OrMe="+OrMe);
-		return op.parse();
+		return op.parse(par);
 	}
 
 	String me() { return op.toString(); }
 }
 
 class Not extends Op {
-	Not(Parser par,Op op) {
-		this.par=par;
-		arg=op;
-	}
+	Not(Op op) { arg=op; }
 
 	Op arg;
 	
-	Op copyMe() { return new Not(par,arg); }
+	Op copyMe() { return new Not(arg); }
 	
 	boolean notAnd(Op y) {
 		return y.except(arg);
 	}
 
-	boolean match() {
+	boolean match(Parser par) {
 		int p=par.pos;
 		Term t=par.tip;
-		boolean result=arg.parse();
+		boolean result=arg.parse(par);
 		par.reset(p,t);
 		return !result;
 	}
@@ -243,19 +238,16 @@ class Not extends Op {
 }
 
 class Peek extends Op {
-	Peek(Parser par,Op op) {
-		this.par=par;
-		arg=op;
-	}
+	Peek(Op op) { arg=op; }
 
 	Op arg;
 	
-	Op copyMe() { return new Peek(par,arg); }
+	Op copyMe() { return new Peek(arg); }
 
-	boolean match() { 
+	boolean match(Parser par) { 
 		int p=par.pos;
 		Term t=par.tip;
-		boolean result=arg.parse();
+		boolean result=arg.parse(par);
 		par.reset(p,t);
 		return result;
 	}
@@ -264,16 +256,13 @@ class Peek extends Op {
 }
 
 class Prior extends Op {
-	Prior(Parser par,Op op) {
-		this.par=par;
-		arg=op;
-	}
+	Prior(Op op) { arg=op; }
 
 	Op arg;
 	
-	Op copyMe() { return new Prior(par,arg); }
+	Op copyMe() { return new Prior(arg); }
 
-	boolean match() { todo(); return !arg.parse(); }
+	boolean match(Parser par) { todo(); return !arg.parse(par); }
 
 	String me() { return "@"+arg; }
 }
@@ -281,9 +270,8 @@ class Prior extends Op {
 
 class Event extends Op {
 
-	Event(Parser par, Rule host, String name, String args) {
+	Event(Rule host, String name, String args) {
 		// Event = '<' s name? s args? '>'
-		this.par=par;
 		this.host=host;
 		this.name=(name==null)? "":name;
 		this.args=(args==null)? "":args;
@@ -293,7 +281,7 @@ class Event extends Op {
 	String name;
 	String args;
 	
-	boolean match() {
+	boolean match(Parser par) {
 		if (par.action!=null)  
 			return par.action.event(par,host.name,name,args);
 		System.out.println(par.traceReport("trace "+host.name+": "+name+" "+args));
@@ -312,15 +300,10 @@ class WhiteSpace extends Op {
 	static int[] ranges={9,13, 32,32, 0x85,0x85, 0xA0,0xA0, 0x1680,0x1680, 0x180E,0x180E,
 		0x2000,0x200A, 0x2028,0x2028, 0x202F,0x202F, 0x205F,0x205F, 0x3000,0x3000 };
 
-	WhiteSpace(Parser par) { 
-		this.par=par;
-		ws=new Chs(par,ranges,ranges.length);
-	}
+	static Chs ws=new Chs(ranges,ranges.length);
 	
-	Chs ws;
-	
-	boolean match() {
-		while (ws.match()) {}
+	boolean match(Parser par) {
+		while (ws.match(par)) {}
 		return true;
 	}
 	
@@ -331,9 +314,7 @@ class NewLine extends Op {
 
 	// $ match end-of-line: 13 (10/0x85)? / 10 / 0x85 / 0x2028
 
-	NewLine(Parser par) { this.par=par; }
-
-	boolean match() {
+	boolean match(Parser par) {
 		int ch=par.chr;
 		if (ch==10 || ch==0x85 || ch==0x2028) par.advance();
 		else if (ch==13) {
@@ -348,23 +329,19 @@ class NewLine extends Op {
 }
 
 class True extends Op {
-	True(Parser par) { this.par=par; }
 
 	Op copyMe() { return this; }
 
-	boolean match() { return true; }
+	boolean match(Parser par) { return true; }
 
 	String me() { return "''"; }
 }
 
 class False extends Op {
-	False(Parser par) {
-		this.par=par;
-	}
 
 	Op copyMe() { return this; }
 
-	boolean match() { return false; }
+	boolean match(Parser par) { return false; }
 
 	String me() { return "!''"; }
 }

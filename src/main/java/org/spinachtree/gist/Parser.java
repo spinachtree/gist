@@ -14,16 +14,12 @@ event handler is given access via public methods.
 
 class Parser {
 	
-	Parser(Grammar gist) {
-		gist.buildParser(this);
-	}
+	Parser(Rules rules) { this.rules=rules; }
 	
-	Map<String,Rule> ruleMap=new HashMap<String,Rule>();
-
-	Rule getRule(String name) { return ruleMap.get(name); }
-	void putRule(String name, Rule rule) { ruleMap.put(name,rule); }
-	
+	Rules rules;
 	Term fault=null;
+	
+	Rule getRule(String name) { return rules.getRule(name); }
 	
 	// parse context....................
 	
@@ -43,6 +39,7 @@ class Parser {
 	
 //	Map<Rule,Memo> memos=new HashMap<Rule,Memo>();
 
+/*
 	String start; // first rule name
 	String trace;
 	
@@ -58,7 +55,7 @@ class Parser {
 		this.trace=trace;
 		return parse(src);
 	}
-	
+*/	
 	Term parse(String src) {
 		if (fault!=null) return fault;
 		input=src;
@@ -67,13 +64,10 @@ class Parser {
 		chr=src.codePointAt(pos);
 		seed=new Term("<root>",src,pos,eot);
 		tip=seed;	// tree growth tip
-	//	Rule rule=ruleMap.get("=");
-//System.out.println("parse rule="+(rule==null));
-	//	start=rule.name;
-		Rule rule=startRule();
-		boolean result=rule.parse();
-		if (!result) return faultResult(start+" parse failed... "); 
-		if (pos<eot) return faultResult(start+" parse incomplete... "); 
+		Rule rule=rules.startRule();
+		boolean result=rule.parse(this);
+		if (!result) return faultResult(rule.name+" parse failed... "); 
+		if (pos<eot) return faultResult(rule.name+" parse incomplete... "); 
 		return seed.next;
 	}
 
@@ -138,13 +132,13 @@ class Parser {
 		else chr=input.codePointAt(pos);
 	}
 
-	public String toString() {
+/*	public String toString() {
 		String s="grammar:\n";
 		Rule rules=ruleMap.get("=");
 		for (String name: ((Rules)rules).ruleNames) s+=ruleMap.get(name).toString()+"\n";
 		return s;
 	}
-	
+*/	
 /*	public String toString() {
 		String s="grammar:\n";
 		for (Rule rule: ruleMap.values()) s+=rule.toString()+"\n";
@@ -167,7 +161,7 @@ class Parser {
 
 	Op fault(String msg) { 
 		Term log=faultTerm(msg);
-		return new False(this);
+		return new False();
 	}
 
 	Term faultTerm(String msg) { 
@@ -208,6 +202,10 @@ class Parser {
 		seed.child=seed.next;
 		seed.next=null;
 		return seed;
+	}
+	
+	public String toString() {
+		return rules.toString();
 	}
 
 } // Parser

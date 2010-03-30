@@ -42,7 +42,7 @@ Date
 
 public class Gist {
 
-//	static Parser gistParser = new Parser();
+	static Parser gist;
 
 	// static HashMap<String,Parser> library = new HashMap<String,Parser>();
 	// 
@@ -70,10 +70,26 @@ public class Gist {
 	edited may choose to catch GistFault exceptions.
 	*/
 	public Gist(String... lines) {
+//System.out.println("Gist====\n"+lines[0]);
 		if (lines.length<1) throw new IllegalArgumentException("Missing grammar...");
 		else if (lines.length==1) grammar=lines[0];
 		else grammar=concat(lines);
-		parser=new Parser(new GistGrammar(grammar));
+		if (gist==null) gist=bootstrap();
+//System.out.println("gist---------------------------"+gist);
+		Term tree=gist.parse(grammar);
+		if (!tree.isTag("rules")) throw new GistFault("Grammar rules fault:\n"+tree);
+		parser=new Parser(Grammar.rules(tree));
+	}
+	
+	Parser bootstrap() {
+		Parser boot=new Parser(Boot.rules());
+//System.out.println("boot---\n"+boot.rules.ruleNames.size());
+		Term bootTree=boot.parse(Grammar.gistGrammar);
+//System.out.println("bootTree--------------------------------------");
+		Parser gistBoot=new Parser(Boot.rules(bootTree));
+//System.out.println("gistBoot---\n"+gistBoot);
+		Term gistTree=gistBoot.parse(Grammar.gistGrammar);
+		return new Parser(Grammar.rules(gistTree));
 	}
 
 	// /**
@@ -164,6 +180,7 @@ public class Gist {
 
 	// -- package internals -----------------------------------------------------------------
 
+	Rule getRule(String name) { return parser.getRule(name); }
 
 	static String concat(String[] lines) {
 		StringBuffer sb=new StringBuffer();

@@ -28,11 +28,9 @@ public class Transform {
 		}
 	}
 
-	Stack<String> buildStack=new Stack<String>();
 
 	Object build(Object trans, Term term) {
 		String name=term.tag();
-		buildStack.push(name);
 		TransMethod methods=methodMap.get(name);
 		if (methods==null) return term.text();
 		Method method=methodMatch(methods,term);
@@ -50,11 +48,7 @@ public class Transform {
 				arg=arg.next();
 			}
 		while (i<arity) args[i++]=null;
-		Object result;
-		try { result = methods.invoke(method,trans,args); }
-		catch (Exception e) { throw new TransformFault("\nbuild: "+buildStack+"\n"+e); }
-		buildStack.pop();
-		return result;
+		return methods.invoke(method,trans,args);
 	}
 	
 	Method methodMatch(TransMethod methods, Term term) {

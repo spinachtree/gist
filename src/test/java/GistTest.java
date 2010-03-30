@@ -72,7 +72,7 @@ public class GistTest {
 		"	mid  : codes-!'0'..'4'-!'6'..'9'       ",
 		"	void : hi-!0xE..FF                    ",
 		"	char : 0x20..10ffff-!34-!92            ");
-		System.out.println(nobut.inspect());
+		//System.out.println(nobut.inspect());
 		Term t=nobut.parse("9713524680569");
 		assertTrue(t.isTag("nob"));
 	}
@@ -163,6 +163,7 @@ public class GistTest {
 		"	_     =  gist.pragma._         \n";
 
 		Gist imp=new Gist(importTest);
+		//System.out.println(imp.inspect());
 		Term t=imp.parse("x42");
 		//System.out.println(t);
 		assertTrue(t.isTag("Imp"));

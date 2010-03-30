@@ -7,6 +7,45 @@ import java.io.*;
 class Library {
 
 	static Map<String,String> grammars = new HashMap<String,String>();
+	static Map<String,Gist> cache=new HashMap<String,Gist>();
+	
+	static Gist get(String label) {
+		Gist gist=cache.get(label);
+		if (gist==null) {
+			String rules=grammars.get(label);
+			if (rules==null) return null;
+			gist=new Gist(rules);
+			cache.put(label,gist);
+		}
+		return gist;
+	}
+	
+	static void put(String label, String grammar) { grammars.put(label,grammar); }
+	static void put(String label, Gist gist) { cache.put(label,gist); }
+	
+	static void load(String label,String... lines) {
+		StringBuffer sb=new StringBuffer();
+		for (String line: lines) sb.append(line).append("\n");
+		grammars.put(label,sb.toString());
+	}
+
+/*	
+	static Gist getGist(String label) { return cache.get(label); }
+	static Gist putGist(String label, Gist gist) { return cache.put(label,gist); }
+//
+Gist getGist(String label) {
+	Gist gist=Library.getGist(label);
+	if (gist==null) {
+		String rules=Library.get(label);
+		if (rules!=null) gist=new Gist(rules);
+		Library.putGist(label,gist);
+	}
+	return gist;
+
+
+
+//
+	static Map<String,String> grammars = new HashMap<String,String>();
 	
 	static String get(String label) { return grammars.get(label); }
 	static void put(String label, String grammar) { grammars.put(label,grammar); }
@@ -17,6 +56,12 @@ class Library {
 		grammars.put(label,sb.toString());
 	}
 
+	static Map<String,Gist> cache=new HashMap<String,Gist>();
+	
+	static Gist getGist(String label) { return cache.get(label); }
+	static Gist putGist(String label, Gist gist) { return cache.put(label,gist); }
+
+*/
 	// define built-in grammars ........................................
 	
         static { 

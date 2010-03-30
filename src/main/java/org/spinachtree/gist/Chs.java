@@ -2,22 +2,20 @@ package org.spinachtree.gist;
 
 class Chs extends Op {
 	
-	Chs(Parser par, String s1, String s2) {
-		this(par,s1,s2,10);
+	Chs(String s1, String s2) {
+		this(s1,s2,10);
 	}
 	
-	Chs(Parser par, String s1, String s2, int radix) {
-		this.par=par;
+	Chs(String s1, String s2, int radix) {
 		if (s2==null) s2=s1;
 		if (s1.substring(0,1).equals("'")) 
 			ranges=new int[] {s1.codePointAt(1), s2.codePointAt(1)};
 		else ranges=new int[] {Integer.parseInt(s1,radix), Integer.parseInt(s2,radix)};
 		size=ranges.length;
-		if (ranges[0]>ranges[1]) fault("Bad range: "+s1+".."+s2);
+		if (ranges[0]>ranges[1]) faults();
  	}
 
-	Chs(Parser par, int[] ranges, int size) {
-		this.par=par;
+	Chs(int[] ranges, int size) {
 		this.ranges=ranges;
 		this.size=size;
 		verify();
@@ -26,7 +24,7 @@ class Chs extends Op {
 	int[] ranges; // [min,max,...] ordered code point ranges
 	int size;     // count of ranges: in 0..ranges.length, size%2==0
 	
-	Op copyMe() { return new Chs(par,ranges,size); }
+	Op copyMe() { return new Chs(ranges,size); }
 
 	boolean orMe(Op x) { 
 		if (x instanceof Chs) return same((Chs)x); else return false;
@@ -40,7 +38,7 @@ class Chs extends Op {
 		return true;
 	}
 
-	boolean match() {
+	boolean match(Parser par) {
 //System.out.println(me()+" pos="+par.pos+" OrMe="+OrMe);
 //		par.chs++;
 		int ch=par.chr;
@@ -125,16 +123,16 @@ class Chs extends Op {
 	}
 
 	void verify() {
-		if (size%2!=0) fault();
+		if (size%2!=0) faults();
 		int i=0; // verify ordered...
 		while (i<size) {
-			if (ranges[i]>ranges[i+1]) fault();
-			if (i>0 && ranges[i-1]>=ranges[i]) fault();
+			if (ranges[i]>ranges[i+1]) faults();
+			if (i>0 && ranges[i-1]>=ranges[i]) faults();
 			i+=2; // ranges=[i,j,k,l,...] i<=j < k<=l < ...
 		}
 	}
 
-	void fault() {
+	void faults() {
 		String rs="";
 		for (int i: ranges) rs+=String.valueOf(i)+" ";
 		fault("Bad char code range: "+rs);
