@@ -98,16 +98,11 @@ class Boot {
 	}
 	Op fact(Op x) { return x; }
 	Op ref(String name) { return compile.ruleRef(name); }
-/*		Rule rule=buildRule(name);
-		Op op=inline(rule);
-		if (op!=null) return op;
-		return new Ref(rules,host(),rule,false);
-	} */
+
 	Op group(String s1, Op sel, String s2) { return new Grp(sel); }
 	Op code(String min, String max) { return new Chs(min,max); }
 	Op chr(String q1, String q2) { return new Chs(q1,q2); }
 	Op str(String s) { return new Str(s); }
-//	String int(String s) { return s; }
 
 	public String toString() {
 		return rules.toString();

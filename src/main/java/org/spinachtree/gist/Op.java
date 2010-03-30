@@ -92,7 +92,6 @@ class Op {
 			if (i<j) { i=j; t=par.tip; }
 			else break;
 		}
-//System.out.println("loop: k="+k+" min="+min);
 		if (k<min) return false;
 		if (i<par.pos && k!=max) par.reset(i,t);
 		return true;
@@ -117,7 +116,6 @@ class Op {
 		return "("+me()+rep+","+And+"/"+Or+")";
 	}
 	
-//	Op fault(Rule rule, Term term, String msg) { return par.fault(rule,term,msg); }
 	Op fault(String msg) { throw new GistFault(msg); }
 
 	void todo() { crash(" not implemented yet... "); }
@@ -208,7 +206,6 @@ class Grp extends Op {
 	Op copyMe() { return new Grp(op); }
 
 	boolean match(Parser par) {
-//System.out.println("Grp: "+me()+" pos="+par.pos+" OrMe="+OrMe);
 		return op.parse(par);
 	}
 
