@@ -12,15 +12,29 @@ event handler is given access via public methods.
 
 */
 
-class Parser {
+public class Parser {
 	
-	Parser(Rules rules) { this.rules=rules; }
+	Parser(String src) {
+		input=src;
+		eot=src.length();
+		pos=0;
+		chr=src.codePointAt(pos);
+		seed=new Term("<root>",src,pos,eot);
+		tip=seed; // tree growth tip
+		peak=0;
+		top=null;
+		memos=new HashMap<Rule,Memo>();
+		fault=null;
+	}
+	
+	Term root() { return seed.next; }
+	
+/*	Parser(Rules rules) { this.rules=rules; }
 	
 	Rules rules;
-	Term fault=null;
 	
 	Rule getRule(String name) { return rules.getRule(name); }
-	
+*/	
 	// parse context....................
 	
 	String input; // source text (a String for now)
@@ -35,9 +49,10 @@ class Parser {
 	Term tip;   // last output term
 	Term top;   // peak output term
 	
-	Action action=null; // event interface
+	Map<Rule,Memo> memos;
+	Term fault;
 	
-//	Map<Rule,Memo> memos=new HashMap<Rule,Memo>();
+	//	Action action=null; // event interface
 
 /*
 	String start; // first rule name
@@ -56,21 +71,25 @@ class Parser {
 		return parse(src);
 	}
 */	
-	Term parse(String src) {
-		if (fault!=null) return fault;
+/*	Term parse(String src) {
+//		if (fault!=null) return fault;
 		input=src;
 		eot=src.length();
 		pos=0;
 		chr=src.codePointAt(pos);
 		seed=new Term("<root>",src,pos,eot);
-		tip=seed;	// tree growth tip
+		tip=seed; // tree growth tip
+		peak=0;
+		top=null;
+		memos=new HashMap<Rule,Memo>();
+		fault=null;
 		Rule rule=rules.startRule();
 		boolean result=rule.parse(this);
 		if (!result) return faultResult(rule.name+" parse failed... "); 
 		if (pos<eot) return faultResult(rule.name+" parse incomplete... "); 
 		return seed.next;
 	}
-
+*/
 	Term newTerm(String tag,int p,Term t) {
 		// Term matching input text...
 		Term term = new Term(tag,input,p,pos);
@@ -132,6 +151,35 @@ class Parser {
 		else chr=input.codePointAt(pos);
 	}
 
+	// Memos ---------------------------------------------------------
+
+	Memo memo(Rule rule) {
+	        Memo memo=memos.get(rule);
+	        if (memo!=null) return memo;
+	        memo=new Memo();
+	        memos.put(rule,memo);
+	        return memo;
+	}
+
+	static final Term FAIL=new Term("fail","",0,0);
+
+	boolean apply(Term term) {
+		if (term==FAIL) return false;
+		// replica may be needed...
+		Term replica = new Term(term.tag,input,term.sot,term.eot);
+		replica.child=term.child;
+		replica.prior=tip;
+		tip.next=replica;
+		tip=replica;
+		pos=term.eot;
+		if (pos>=eot) chr=-1;
+		else chr=input.codePointAt(pos);
+		return true;
+	}
+	
+
+	// -- trace and fault reporting ------------------------------------
+
 /*	public String toString() {
 		String s="grammar:\n";
 		Rule rules=ruleMap.get("=");
@@ -152,8 +200,6 @@ class Parser {
 		else return str+input.substring(i,i+20)+" ... "+input.substring(j-20,j);
 	}
 		
-	// -- trace and fault reporting ------------------------------------
-
 	Op fault(Rule rule, Term term, String msg) {
 		// Rule: <name> <term.text>: msg
 		return fault("Rule: "+rule.name+"  "+term.text()+"\n    "+msg);
@@ -204,17 +250,13 @@ class Parser {
 		return seed;
 	}
 	
-	public String toString() {
+/*	public String toString() {
 		return rules.toString();
 	}
-
+*/
 } // Parser
 
-class GistFault extends RuntimeException {
-	GistFault(String s) { super(s); }
-}
 
-/*
 class Memo {
 
 	int start; //=-1;
@@ -231,26 +273,8 @@ class Memo {
 		frames=null; // stack only allocated if needed
 	}
 }
-	
-	Memo memo(Rule rule) {
-	        Memo memo=memos.get(rule);
-	        if (memo!=null) return memo;
-	        memo=new Memo();
-	        memos.put(rule,memo);
-	        return memo;
-	}
-	
-	static final Term FAIL=new Term("fail","",0,0);
-	
-	boolean apply(Term term) {
-		if (term==FAIL) return false;
-		// replica may be needed...
-		Term replica = new Term(term.tag,input,term.sot,term.eot);
-		replica.child=term.child;
-		replica.prior=tip;
-		tip.next=replica;
-		tip=replica;
-		pos=term.eot;
-		return true;
-	}
-*/	
+
+class GistFault extends RuntimeException {
+	GistFault(String s) { super(s); }
+}
+

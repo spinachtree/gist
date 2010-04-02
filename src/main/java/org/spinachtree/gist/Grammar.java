@@ -106,7 +106,9 @@ class Grammar {
         Op newln(String _) { return new NewLine(); } // $ => XML1.1 eol
         Op anon(String _) { return new Chs(new int[] {0,0x10FFFF},1); } // _ => any
 
-	Op event(String _s, String name,String _s1, String args) { return new Event(compile.host(),name,args); }
+	Op event(String _s, String name,String _s1, String args) { 
+		return new Event(rules,compile.hostRule(),name,args);
+	}
 
 	Op ints(String min, String max) { return new Chs(min,max); }
 	Op hexs(String min, String max) { return new Chs(min,max,16); }

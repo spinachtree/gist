@@ -17,8 +17,20 @@ class Rules extends Op {
 	String start() { return ruleNames.get(0); }
 	Rule startRule() { return getRule(start()); }
 
-	boolean parse(Parser par) {
+/*	boolean parse(Parser par) {
 		return startRule().parse(par);
+	}
+*/
+	
+	Action action=null; // event interface
+
+	Term parse(String text) {
+		Parser par=new Parser(text);
+		Rule rule=startRule();
+		boolean result=rule.parse(par);
+		if (!result) return par.faultResult(rule.name+" parse failed... "); 
+		if (par.pos<par.eot) return par.faultResult(rule.name+" parse incomplete... "); 
+		return par.root(); //seed.next;
 	}
 	
 	public String toString() {
@@ -45,52 +57,60 @@ class Rule extends Op {
 	Op copyMe() { crash(); return this; }
 	
 	boolean match(Parser par) {
-//	        Memo memo=scan.memo(this);
+	        Memo memo=par.memo(this);
 		int p=par.pos;
-//if (par.trace!=null)// && par.trace.equals(name))
-//	System.out.println(name+" pos="+p);
-
-//if (name.equals("rule")) System.out.println("rule: "+p);
 		// first check for cache memo results....
-//		if (i==memo.start) { // deja vu
-//			if (memo.result==null) { // detect left recursion...
-//				memo.loop=true;
-//				memo.result=Scan.FAIL;
-//				return false;
-//			} else if (fixed || memo.loop) // ok to use a memo 
-//				return scan.apply(memo.result);
-//		}
+		if (p==memo.start) { // deja vu
+			if (memo.result==null) { // detect left recursion...
+				memo.loop=true;
+				memo.result=par.FAIL;
+				return false;
+			} else if (fixed || memo.loop) { // ok to use a memo
+				return par.apply(memo.result); 
+			}
+		}
 		// normal parse (no result memo)....
-//		memo.start=i;
-//		memo.result=null;
+		memo.start=p;
+		memo.result=null;
 		Term t=par.tip;
 		if (body.parse(par)) {
-//if (name.equals("rule")) System.out.println("rule: "+p+".."+par.pos+" "+
-//par.input.substring(p,par.pos)+"\n"+t.next());
-//			memo.start=i;
-//			memo.result=scan.newTerm(name,i,t);
-//			if (memo.loop) return leftParse(scan,memo,i,t);
-			
-			par.newTerm(name,p,t);
-//if (par.trace!=null)// && par.trace.equals(name))
-//	System.out.println(name+" match "+par.show(p,par.pos));
+			memo.start=p;
+			memo.result=par.newTerm(name,p,t);
+			if (memo.loop) return leftParse(par,memo,p,t);
 			return true;
 		}
-//		memo.start=i;
-//		memo.result=Scan.FAIL;
-//if (par.trace!=null)// && par.trace.equals(name))
-//	System.out.println(name+" fail  "+par.show(p,par.peak));
+		memo.start=p;
+		memo.result=par.FAIL;
 		return false;
 	}
-/*	boolean match() {
-		int i=par.pos;
-		boolean result=body.parse();
-		if (result) return true;
-		par.reset(i);
-		return result;
+	
+	boolean leftParse(Parser par,Memo memo,int i,Term t) { // left recusion
+		if (memo.seed!=null) { // re-entrant for (errant) nesting...
+		    if (memo.frames==null) memo.frames=new ArrayList<Term>();
+		    memo.frames.add(memo.seed); // stack nested results
+		}
+		memo.seed=memo.result; // seed result to grow...
+		int j=i, best=par.pos;
+		while (true) { // repeat parse to grow the seed result....
+			par.reset(i,t);
+			memo.result=memo.seed;
+			memo.start=memo.result.sot;
+			if (!body.parse(par)) break;
+			j=par.pos;
+			if (j<=best) break;
+			best=j;
+			memo.seed=par.newTerm(name,i,t);
+		}
+		memo.result=memo.seed;
+		memo.seed=null;
+		if (memo.frames!=null && !memo.frames.isEmpty())
+		    memo.seed=memo.frames.remove(memo.frames.size()-1);
+		memo.start=memo.result.sot;
+		par.reset(i,t);
+		return par.apply(memo.result);
 	}
-*/	
-	String me() { return name+(term?":":"=")+body+"\n"; }
+
+	String me() { return name+(fixed?"":"~")+(term?":":"=")+body+"\n"; }
 
 }
 

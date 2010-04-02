@@ -40,8 +40,8 @@ public class Json {
 		"	vals   =  val (~','~ val)*             ",
 		"	val    = object/array/string/number    ",
 		"	         /true/false/null              ",
-		"	string = quot.. (chs/esc)* quot..      ",
-		"	esc    = bs.. (code / 'u' hex)         ",
+		"	string = quot (chs/esc)* quot      ",
+		"	esc    = bs (code / 'u' hex hex hex hex)   ",
 		"	number = neg? digits frac? exp?        ",
 		"	frac   = '.' int                       ",
 		"	exp    = ('e'/'E') sign? int           ",
@@ -53,16 +53,16 @@ public class Json {
 		"	true   : 'true'                        ",
 		"	false  : 'false'                       ",
 		"	null   : 'null'                        ",
-		"	hex    : (digit/'a'..'f'/'A'..'F')*4   ",
+		"	hex    : digit/'a'..'f'/'A'..'F'       ",
 		"	code   : bs/fs/quot                    ",
 		"	         /'b'/'f'/'n'/'r'/'t'          ",
-		"	bs     : 92   -- back-slash            ",
-		"	fs     : 47   -- forward-slash         ",
-		"	quot   : 34   -- quote                 ",
+		"	bs..     : 92   -- back-slash            ",
+		"	fs..     : 47   -- forward-slash         ",
+		"	quot..   : 34   -- quote                 ",
 		"	chs    : char+                         ",
-		"	char   : 0x20..10ffff - quot - bs      ");
+		"	char   : 0x20..10ffff-!quot-!bs      ");
 		
-	//	System.out.println(json.inspect());
+		System.out.println(json.inspect());
 
 		String in="{ \"a\" : true, \"b\" : false,"+
 			"\"list\" : [123.45, \"one\\ttwo\", null] }";

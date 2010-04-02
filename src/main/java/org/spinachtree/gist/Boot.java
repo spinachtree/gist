@@ -82,7 +82,9 @@ class Boot {
 
 	void putRule(String name, boolean elide, boolean term, Op body) {
 		rules.add(name);
-		rules.putRule(name,new Rule(name,elide,term,body));
+		Rule rule=new Rule(name,elide,term,body);
+		if (!term) rule.fixed=false;
+		rules.putRule(name,rule);
 	}
 
 	// Transform rules for compiler:  parse tree => parser Ops ===========================

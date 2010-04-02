@@ -48,7 +48,7 @@ public class Transform {
 				arg=arg.next();
 			}
 		while (i<arity) args[i++]=null;
-		return methods.invoke(method,trans,args);
+		return methods.invoke(method,term,trans,args);
 	}
 	
 	Method methodMatch(TransMethod methods, Term term) {
@@ -120,12 +120,16 @@ class TransMethod {
 
 	void invalid(String msg) { valid=false; this.msg+=msg; }
 	
-	Object invoke(Method method,Object trans,Object[] args) {
+	Object invoke(Method method,Term term,Object trans,Object[] args) {
 		if (!valid)
 			throw new TransformFault(name+msg);
 		try { return method.invoke(trans,args); }
 		catch (Exception e) {
-			throw new TransformFault(name+": "+e+"\n"+report(args));
+			String path=term.tag;
+			Term t=term;
+			while (t.prior!=null) { t=t.prior; path=t.tag+" "+path; }
+			Term fail=new Term("-- "+path+" ",term.text,term.sot,term.eot);
+			throw new TransformFault(name+": "+e+"\n"+report(args)+"\n"+fail);
 		}
 	}
 

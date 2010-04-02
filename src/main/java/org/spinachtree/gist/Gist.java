@@ -42,7 +42,8 @@ Date
 
 public class Gist {
 
-	static Parser gist;
+//	static Parser gist;
+	static Rules gist;
 
 	// static HashMap<String,Parser> library = new HashMap<String,Parser>();
 	// 
@@ -55,7 +56,8 @@ public class Gist {
 	// }
 
 	String grammar; // source rules
-	Parser parser; // parser for this grammar
+	Rules rules; // Op rules for this grammar
+//	Parser parser; // parser for this grammar
 	
 
 	/**
@@ -73,20 +75,29 @@ public class Gist {
 		if (lines.length<1) throw new IllegalArgumentException("Missing grammar...");
 		else if (lines.length==1) grammar=lines[0];
 		else grammar=concat(lines);
-		if (gist==null) gist=bootstrap();
+		if (gist==null) { gist=bootstrap(); } //System.out.println(gist); }
 		Term tree=gist.parse(grammar);
 		if (!tree.isTag("rules")) throw new GistFault("Grammar rules fault:\n"+tree);
-		parser=new Parser(Grammar.rules(tree));
+//		parser=new Parser(Grammar.rules(tree));
+		rules=Grammar.rules(tree);
 	}
 	
-	Parser bootstrap() {
+	Rules bootstrap() {
+		Rules boot=Boot.rules();
+		Term bootTree=boot.parse(Grammar.gistGrammar);
+		Rules gistBoot=Boot.rules(bootTree);
+		Term gistTree=gistBoot.parse(Grammar.gistGrammar);
+		return Grammar.rules(gistTree);
+	}
+
+/*	Parser bootstrap() {
 		Parser boot=new Parser(Boot.rules());
 		Term bootTree=boot.parse(Grammar.gistGrammar);
 		Parser gistBoot=new Parser(Boot.rules(bootTree));
 		Term gistTree=gistBoot.parse(Grammar.gistGrammar);
 		return new Parser(Grammar.rules(gistTree));
 	}
-
+*/
 	// /**
 	// Allows lines of grammar to be writen as list of strings.
 	// @param lines   any number of grammar line string arguments.
@@ -116,8 +127,16 @@ public class Gist {
 	@param text   the input string to be parsed
 	@return root term of the parse tree, or a fault report
 	*/
-	public Term parse(String text) { return parser.parse(text); }
-
+	public Term parse(String text) { return rules.parse(text); }
+/*	Term parse(String source) {
+		Parser par=new Parser(source);
+		Rule rule=rules.startRule();
+		boolean result=rule.parse(par);
+		if (!result) return par.faultResult(rule.name+" parse failed... "); 
+		if (pos<eot) return par.faultResult(rule.name+" parse incomplete... "); 
+		return par.root(); //seed.next;
+	}
+*/
 	
 	// /**
 	// assign the given label to this grammar
@@ -149,7 +168,7 @@ public class Gist {
 	@return  text for debug inspection
 	*/
 	public String inspect() {
-		return parser.toString();
+		return rules.toString();
 	}
 
 	/**
@@ -167,7 +186,7 @@ public class Gist {
 	*/
 
 	public Gist events(Action action) {
-		parser.action=action;
+		rules.action=action;
 		return this;
 	}
 	
@@ -175,7 +194,7 @@ public class Gist {
 
 	// -- package internals -----------------------------------------------------------------
 
-	Rule getRule(String name) { return parser.getRule(name); }
+	Rule getRule(String name) { return rules.getRule(name); }
 
 	static String concat(String[] lines) {
 		StringBuffer sb=new StringBuffer();

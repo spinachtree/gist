@@ -20,7 +20,7 @@ class Compile {
 
 	void rules(Object xla,Term term) {
 		this.xla=xla;
-		if (!term.isTag("rules")) throw new GistFault("Not a rules tree?\n"+term);
+		if (!term.isTag("rules")) throw new GistFault("Grammar rules parse fault:\n"+term);
 		mapTerms(term);
 		if (rules.isEmpty()) throw new GistFault("\nNo 'rule' terms found...");
 		buildRules();
@@ -67,26 +67,27 @@ class Compile {
 		rules.putRule(name,rule); // target for refs during build...
 		buildStack.push(name);
 		try { rule.body=(Op)transform.build(xla,term.child("sel")); }
-		catch (Exception e) { throw new GistFault("buildRule "+buildStack+" "+e); }
+		catch (Exception e) { throw new GistFault("buildRule "+buildStack+"\n"+e); }
 		buildStack.pop();
 		return rule;
 	}
 
 	String hostName() { return buildStack.peek(); }
-	Rule host() { return rules.getRule(hostName()); }
+	Rule hostRule() { return rules.getRule(hostName()); }
 	
 	Op ruleRef(String name) { return ruleRef(null,name,null); }
 
 	Op ruleRef(String path, String name, String elide) {
 		if (path!=null && path.length()>0) return externalRef(path,name,elide);
+		Rule host=hostRule();
 		Rule rule=buildRule(name);
-		Op op=inline(rule);
+		Op op=inline(host,rule);
 		if (op!=null) return op;
-		return new Ref(rules,host(),rule,(elide!=null));
+		return new Ref(rules,host,rule,(elide!=null));
 	}
 	
-	Op inline(Rule rule) { // macro expansion copy...
-		if (host().term && rule.body!=null) {
+	Op inline(Rule host,Rule rule) { // macro expansion copy...
+		if (host.term && rule.body!=null) {
 			Op bod=rule.body.copy();
 			if (bod!=null) return bod;
 		}
@@ -120,7 +121,7 @@ class Compile {
 			Rule rule=gist.getRule(name);
 			if (rule!=null) return rule;
 		}
-		return null;	
+		return null;
 	}
 
 	Op externalRef(String path, String name, String elide) {
@@ -133,7 +134,7 @@ class Compile {
 			faultTerm("Undefined external rule: "+path+name);
 			return new False();
 		}
-		return new Ref(rules,host(),rule,(elide!=null));
+		return new Ref(rules,hostRule(),rule,(elide!=null));
 	}
 
 	void noGrammar(String label) {

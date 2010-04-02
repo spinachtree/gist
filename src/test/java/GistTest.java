@@ -30,7 +30,7 @@ public class GistTest {
   		assertTrue(date.child().next("day").isText("3"));
   }
 
-/*	@Test
+	@Test
 	public void repeatTest() {
 	String repTest= 
 	"	reps  = alpha digit* alpha+ digit*3 alpha*2.._ digit*3..5 0..100*  \n"+
@@ -42,7 +42,8 @@ public class GistTest {
 	assertTrue(t.isTag("reps"));
 	
 	}
-*/
+
+
 	@Test
 	public void charsTest() {
 		Gist nums=new Gist(
@@ -94,7 +95,6 @@ public class GistTest {
 		assertTrue(e.isTag("ebnf"));
 	}
 
-/*
 	@Test
 	public void leftTest() {
 		String leftTest=
@@ -149,11 +149,13 @@ public class GistTest {
 		
 		Gist ambig=new Gist(ambigTest);
 		Term am=ambig.parse("(1+2)+3");
+		//System.out.println(am);
 		assertTrue(am.isTag("Exp"));
 		am=ambig.parse("1+2*(3-4/2+1)+5");
+		//System.out.println(am);
 		assertTrue(am.isTag("Exp"));
 	}
-*/
+
 
 	@Test
 	public void importTest() {

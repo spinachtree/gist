@@ -45,13 +45,13 @@ class Op {
 	}
 	Op or(Op x) { 
 		if (x==null) return this;
-		if (Or!=null) fault("unreachable: "+this+".and("+x+")");
-		if (And==null && merge(x)) return this;
+		if (Or!=null || Rep) fault("unreachable: "+this+".or("+x+")");
+		if (And==null && x.And==null && x.Or==null && merge(x)) return this;
 		Or=x;
 		OrMe=orMe(x);
 		return this;
 	}
-	Op rep() { Rep=true; return this; }
+	Op rep() { Rep=true; if (Or!=null) fault("unreachable: "+me()+"/"+Or.me()); return this; }
 	Op rep1() { Rep=true; min=1; return this; }
 	Op opt() { Rep=true; max=1; return this; }
 	
@@ -143,7 +143,11 @@ class Ref extends Op {
 	
 	void resolveTarget() {
 		if (rule==null) rule=rules.getRule(name);
-		if (rule==null || rule.body==null) return; // to resolve at run-time...
+		if (rule==null || rule.body==null) { // to resolve at run-time...
+			if (host!=null) host.fixed=false;
+			return;
+		}
+		if (!rule.fixed && host!=null) host.fixed=false;
 		if (elide || (host!=null && host.term) || rule.elide) target=rule.body;
 		else target=rule;
 	}
@@ -267,20 +271,22 @@ class Prior extends Op {
 
 class Event extends Op {
 
-	Event(Rule host, String name, String args) {
+	Event(Rules rules,Rule host, String name, String args) {
 		// Event = '<' s name? s args? '>'
+		this.rules=rules;
 		this.host=host;
 		this.name=(name==null)? "":name;
 		this.args=(args==null)? "":args;
 	}
 	
+	Rules rules;
 	Rule host;
 	String name;
 	String args;
 	
 	boolean match(Parser par) {
-		if (par.action!=null)  
-			return par.action.event(par,host.name,name,args);
+		if (rules.action!=null)  
+			return rules.action.event(par,host.name,name,args);
 		System.out.println(par.traceReport("trace "+host.name+": "+name+" "+args));
 		return true;
 	}
