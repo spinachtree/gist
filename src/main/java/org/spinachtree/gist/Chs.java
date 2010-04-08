@@ -24,7 +24,11 @@ class Chs extends Op {
 	int[] ranges; // [min,max,...] ordered code point ranges
 	int size;     // count of ranges: in 0..ranges.length, size%2==0
 	
-	Op copyMe() { return new Chs(ranges,size); }
+	Chs copyMe() { //return new Chs(ranges,size); }
+		int[] rs=new int[size];
+		for (int i=0; i<size; i++)  rs[i]=ranges[i];
+		return new Chs(rs,size);
+	}
 
 	boolean orMe(Op x) { 
 		if (x instanceof Chs) return same((Chs)x); else return false;
@@ -36,6 +40,13 @@ class Chs extends Op {
 			if (x.ranges[i]!=ranges[i]) return false;
 		}
 		return true;
+	}
+	
+	boolean overrun(Op x) {
+		if (!(x instanceof Chs)) return false;
+		Chs y=((Chs)x).copyMe();
+		if (y.except(this)==false) return false;
+		return (y.size==0);
 	}
 
 	boolean match(Parser par) {

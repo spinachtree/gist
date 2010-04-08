@@ -44,7 +44,7 @@
             <manifest>
                 <attribute name="Built-By" value="Peter Cashin, peter@spinachtree.org"/>
                 <attribute name="Main-Class" value="org.spinachtree.gist.Gist"/>
-                <attribute name="Implementation-Version" value="1.1.${build.number}"/>
+                <attribute name="Implementation-Version" value="1.4.${build.number}"/>
             </manifest>
         </jar>
     </target>
@@ -70,7 +70,13 @@
 	<java classname="Overruns" classpath="target/test:gist.jar:${junit}" />
     </target>
 
+    <target name="actiontest" depends="test.compile">
+	<java classname="ActionTest" classpath="target/test:gist.jar:${junit}" />
+    </target>
 
+    <target name="priortest" depends="test.compile">
+	<java classname="PriorTest" classpath="target/test:gist.jar:${junit}" />
+    </target>
 
 <!-- javaDoc...................................................................... -->
 

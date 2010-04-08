@@ -43,7 +43,7 @@ public class Transform {
 			args[i++]=term.text();
 		else
 			while (arg!=null && i<arity) {
-				args[i]=buildArg(trans,types[i].getName(),arg);
+				args[i]=buildArg(trans,types[i],arg);
 				i+=1;
 				arg=arg.next();
 			}
@@ -61,7 +61,14 @@ public class Transform {
 		return method;
 	}
 	
-	Object buildArg(Object trans,String className,Term arg) {
+	Object buildArg(Object trans,Class cls,Term arg) {
+		String name=cls.getSimpleName();
+		if (name.equals("ArrayList")) return listArgs(trans,arg);
+		if (name.equals("Term")) return arg;
+		if (name.equals("String")) return arg.text();
+		return build(trans,arg);
+	}
+/*	Object buildArg(Object trans,String className,Term arg) {
 		if (className.equals("java.util.ArrayList"))
 			return listArgs(trans,arg);
 		if (className.equals("oreg.spinachtree.gist.Term"))
@@ -70,7 +77,7 @@ public class Transform {
 			return arg;
 		return build(trans,arg);
 	}
-
+*/
 	ArrayList<Object> listArgs(Object trans,Term arg) {
 		ArrayList<Object> args=new ArrayList<Object>();
 		String tag=arg.tag();
@@ -121,15 +128,14 @@ class TransMethod {
 	void invalid(String msg) { valid=false; this.msg+=msg; }
 	
 	Object invoke(Method method,Term term,Object trans,Object[] args) {
-		if (!valid)
-			throw new TransformFault(name+msg);
+		if (!valid) throw new TransformFault(name+msg);
 		try { return method.invoke(trans,args); }
 		catch (Exception e) {
 			String path=term.tag;
 			Term t=term;
 			while (t.prior!=null) { t=t.prior; path=t.tag+" "+path; }
 			Term fail=new Term("-- "+path+" ",term.text,term.sot,term.eot);
-			throw new TransformFault(name+": "+e+"\n"+report(args)+"\n"+fail);
+			throw new TransformFault(name+": "+e.getCause()+"\n"+report(args)+"\n"+fail);
 		}
 	}
 

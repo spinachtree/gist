@@ -6,11 +6,12 @@ public class Shop {
 	public static void main(String[] args) {
 		
 		Gist shop = new Gist(
-			"lines = (~ item)* ",
+			"lines = (~ item)* ~",
 			"item  = name s.. value ",
 			"name  : black+ ",
 			"s     : white* -- in-line tab or space chars...    ",
-			"value : text* -- black/white, the rest of the line ");
+			"value : text* -- black/white, the rest of the line ",
+			"@import gist.pragma ");
 		
 		Term items=shop.parse("foo bar\nspam 4 tins\n\n\thoney	big pot\n");
 	

@@ -14,11 +14,12 @@ public class XMLregex {
 		"content = (xml / pcdata)* ",
 		"att     = name ~ '=' ~ quote ",
 		"entity  = '&' (name / '#' (int / 'x' hex)) ';' ",
-		"quote   : quot (char-quot)* quot / apos (char-apos)* apos ",
+		"quote   : QUOT (char-!QUOT)* QUOT / APOS (char-!APOS)* APOS ",
 		"name    : xmlName ",
-		"pcdata  : (char-'<'-'&')+ ",
+		"pcdata  : (char-!'<'-!'&')+ ",
 		"int     : digit+ ",
-		"hex     : xdigit+ " );
+		"hex     : XDIGIT+ ",
+		"@import gist.pragma " );
 		
 	System.out.println(xml.inspect());
 	

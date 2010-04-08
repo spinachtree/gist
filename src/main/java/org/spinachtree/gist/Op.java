@@ -1,9 +1,9 @@
 package org.spinachtree.gist;
 
 /*
-	Op is a parser operation that implements the parse(par) method predicate.
+	Op implements the parse(par) method predicate.
 	
-	Ops are built into a tree with And and OR Op arguments. The And Op is invoked
+	Ops are built into a tree with And and OR arguments. The And Op is invoked
 	if the Op's match(par) method succeeds, and the Or Op is called if it fails.
 	
 	Null And => true (the Op is all done). The And links represents a sequence.
@@ -13,9 +13,10 @@ package org.spinachtree.gist;
 	
 	The parent Op class contains the logic to traverse And sequences and  Or choices.
 	
-	The bulk of the work is done by two Op subclasses:
-		ref	-- a rule name reference, returns the rule.parse(par) result.
-		chs	-- match next input character into a set of char code ranges.
+	The bulk of the Ops are expected to be instances of these subclasses:
+		Rule	-- contains the Op expression for a rule
+		Ref	-- a rule name reference, returns the rule.parse(par) result.
+		Chs	-- match next input character into a set of char code ranges.
 	
 	Parse tree building and left recursion is handled in the Rule Op.
 	
@@ -39,7 +40,8 @@ class Op {
 	Op and(Op x) {
 		if (x==null) return this;
 		if (And!=null) fault("todo: group: "+this+".and("+x+")");
-		if (Or==null && notAnd(x)) return x;
+		if (Or==null && notAnd(x)) return x;  // this-!x
+		if (Rep && overrun(x)) fault("over-run, unreachable: "+this+" "+x);
 		And=x;
 		return this;
 	}
@@ -54,11 +56,13 @@ class Op {
 	Op rep() { Rep=true; if (Or!=null) fault("unreachable: "+me()+"/"+Or.me()); return this; }
 	Op rep1() { Rep=true; min=1; return this; }
 	Op opt() { Rep=true; max=1; return this; }
+	Op repn(int n, int m) { Rep=true; min=n; if (m>=0) max=m; return this; }
 	
 	boolean merge(Op x) { return false; }
 	boolean except(Op x) { return false; }
 	boolean notAnd(Op x) { return false; }
 	boolean orMe(Op x) { return this==x; }
+	boolean overrun(Op x) { return false; }
 	
 	Op copy() {
 		if (And!=null || Or!=null || Rep!=false) return null;
@@ -159,10 +163,23 @@ class Ref extends Op {
 	Op target;
 
 	Op copyMe() { return new Ref(rules,host,rule,elide); }
-	
+
 	boolean orMe(Op x) { 
 		if (x instanceof Ref) return name.equals(((Ref)x).name);
 		return false;
+	}
+	
+	boolean overrun(Op x) {
+		Chs val=deref(target);
+		if (val==null) return false;
+		return val.overrun(deref(x));
+	}
+	
+	Chs deref(Op x) {
+		if (x instanceof Chs) return (Chs)x;
+		if (x instanceof Ref) return deref(((Ref)x).target);
+		if (x instanceof Rule) return deref(((Rule)x).body);
+		return null;
 	}
 	
 	boolean match(Parser par) {
@@ -179,16 +196,20 @@ class Ref extends Op {
 class Str extends Op {
 	Str(String str) {
 		this.str=str.substring(1,str.length()-1);
+		first=this.str.codePointAt(0);
 	}
 
 	String str;
+	int first; // first char code point
 	
 	Op copyMe() { return new Str(str); }
 
 	boolean match(Parser par) {
-		int cc=str.codePointAt(0);
-		if (par.chr!=cc) return false;
+		if (par.chr!=first) return false;
+	//	int cc=str.codePointAt(0);
+	//	if (par.chr!=cc) return false;
 		int i=0;
+		int cc=first;
 		while (i<str.length()-1) {
 			i+=(cc<0x10000)? 1:2;
 			cc=str.codePointAt(i);
@@ -257,15 +278,28 @@ class Peek extends Op {
 }
 
 class Prior extends Op {
-	Prior(Op op) { arg=op; }
+	Prior(String name) { this.name=name; }
 
-	Op arg;
+	String name;
 	
-	Op copyMe() { return new Prior(arg); }
+	Op copyMe() { return new Prior(name); }
 
-	boolean match(Parser par) { todo(); return !arg.parse(par); }
+	boolean match(Parser par) { 
+		Term t=par.tip;
+		while (t!=null && !t.isTag(name)) t=t.prior();
+		if (t==null) return false;
+		String txt=t.text();
+		int i=0, cc;
+		while (i<txt.length()) {
+			cc=txt.codePointAt(i);
+			if (cc!=par.chr) return false;
+			i+=(cc<0x10000)? 1:2;
+			par.advance();
+		}
+		return true;
+	}
 
-	String me() { return "@"+arg; }
+	String me() { return "@"+name; }
 }
 
 

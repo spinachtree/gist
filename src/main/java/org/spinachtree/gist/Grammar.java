@@ -26,17 +26,17 @@ class Grammar {
 		"sel     = seq xs '/' xs sel / seq ", 
 		"seq     = item s (',' xs)? seq / item ", 
 		"item    = factor rep? / prime ",
-		"rep     = '+'/'?'/'*' ints? ",
+		"rep     = '+'/'?'/'*'/'^' ints ",
 		"factor  = fact (s butnot s fact)* ",
-		"fact    = ident/literal/group/prior/event ", 
-		"prime   = option/many/not/peek ", 
+		"fact    = ident/literal/group/prior ", 
+		"prime   = option/many/not/peek/event ", 
 		"group   = '(' exp ')' ", 
 		"option  = '[' exp ']' ", 
 		"many    = '{' exp '}' ",
 		"exp     = (xs sel xs)* ",
-		"not     = '!' s factor ", 
-		"peek    = '&' s factor ", 
-		"prior   = '@' s name ", 
+		"not     = '!' fact ", 
+		"peek    = '&' fact ", 
+		"prior   = '@' name ", 
 		"event   = '<' s name? s args? '>' ", 
 		"literal = quote / str / code ", 
 		"quote   = quo ('..' quo)? ", 
@@ -44,10 +44,9 @@ class Grammar {
 		"ints    = int ('..' (int/anon))? ", 
 		"hexs    = hex ('..' ('0'('x'/'X'))? hex)? ", 
 		"ident   = ref / anon / skip / newln ",
-		"ref     = path name elide? ",
-		"import  = '_' s defn s label '._'? (s ','? s label '._'?)* ",
+		"ref     = label elide? ",
+		"import  = '@import' (s label)+ ",
 		"label   : name ('.' name)* ",
-		"path    : (name '.')*  ",
 		"name    : alpha (alnum/'_')* ",
 		"defn    : '=' / ':' ", 
 		"int     : digit+ ", 
@@ -55,8 +54,8 @@ class Grammar {
 		"quo     : 39 (32..38/40..126) 39 ", 
 		"str     : 39 (32..38/40..126)* 39 ", 
 		"s       : blank* ", 
-		"xs      : (sp* comment?)* ", 
-		"comment : ('--' / '//' / '#') print* ",
+		"xs      : (sp* comment?)* ",
+		"comment : ('--' / '//') print* ",
 		"args    : (32..61/63..126)+ ", // !'>'
 		"alnum   : alpha/digit ", 
 		"alpha   : 'a'..'z'/'A'..'Z' ", 
@@ -76,13 +75,7 @@ class Grammar {
 	Op sel(Op x, String xs1, String xs2, Op y) { return x.or(y); }
 	Op seq(Op x, String s, Op y) { return x.and(y); }
 	Op seq(Op x, String s, String xs, Op y) { return x.and(y); }
-	Op item(Op x, String rep) {
-		if (rep==null) return x;
-		if (rep.equals("*")) return x.rep();
-		if (rep.equals("+")) return x.rep1();
-		if (rep.equals("?")) return x.opt();
-		else return x;
-	}
+	Op item(Op x, Term rep) { return repeat(x,rep); }
 	Op factor(ArrayList<Op> ops) { return notList(1,ops.get(0),ops); }
 	Op group(Op x) { if (x.And==null && x.Or==null) return x; else return new Grp(x); }
 
@@ -96,11 +89,11 @@ class Grammar {
 	
 	Op exp(String _, ArrayList<Op> ops, String _x) { return andList(1,ops.get(0),ops); }
 
-	Op not(String _s, Op x) { return new Not(x); }
-	Op peek(String _s, Op x) { return new Peek(x); }
-	Op prior(String _s, Op x) { return new Prior(x); }
+	Op not(Op x) { return new Not(x); }
+	Op peek(Op x) { return new Peek(x); }
+	Op prior(String name) { return new Prior(name); }
 
-	Op ref(String path, String name, String elide) { return compile.ruleRef(path,name,elide); }
+	Op ref(String label, String elide) { return compile.ruleRef(label,elide); }
 
         Op skip(String _) { return new WhiteSpace(); } // ~ => xs..*
         Op newln(String _) { return new NewLine(); } // $ => XML1.1 eol
@@ -126,7 +119,25 @@ class Grammar {
 		if (x.except(y)) return notList(i+1,x,ops);
 		return new Not(y).and(notList(i+1,x,ops));
 	}
-
+	
+	Op repeat(Op x, Term rep) {
+		if (rep==null) return x;
+		if (rep.child()==null) {
+			String reps=rep.text();
+			if (reps.equals("*")) return x.rep();
+			if (reps.equals("+")) return x.rep1();
+			if (reps.equals("?")) return x.opt();
+		}
+		Term ints=rep.child("ints");
+		Term int1=ints.child("int");
+		Term int2=int1.next("int");
+		int min=Integer.parseInt(int1.text());
+		int max=min;
+		if (int2!=null) max=Integer.parseInt(int2.text());
+		else if (ints.has("anon")) max=-1;
+		return x.repn(min,max);
+	}
+		
 	static String stringof(String... lines) {
 		StringBuffer sb=new StringBuffer();
 		for (String line: lines) sb.append(line).append("\n");

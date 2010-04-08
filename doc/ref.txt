@@ -13,11 +13,11 @@ The grammar expression defining a rule can include any of these operators:
 
 eg
 	X/Y		choice of X else Y, first sequential match
-	X Y		sequence X then Y, space or comma (X,Y)
+	X Y		sequence X then Y, space or comma separator (X,Y)
 	X*		any number of X
 	X+		one or more X, same as: (X X*)
 	X?		optional X, same as: (X / '')
-	X-Y		X but not if Y, equivalent to: (!Y X)
+	X-!Y		X but-not Y, equivalent to: (!Y X)
 	!X		not X, fails if X matches, else ''
 	&X		asserts there is an X, same as: !!X
 	(X)		group expression
@@ -48,16 +48,11 @@ eg
 	R = ( (X (Y+) Z)
 	  / ((!P) Q ('0'..'9')*) );
 
-A rule definition may use an explicit ":[;]" as a terminator, and this allows multiple rules to appear on the same line. A rule may continue on the next line if there is a choice ":[/]" or an unclosed bracket, but each line is taken as a group expression so an explicit comma ":[,]" or parenthesis are required to continue a sequence into the next line.
+A rule definition may use an explicit ":[;]" as a terminator, and this allows multiple rules to appear on the same line. A rule may continue on the next line if there is a choice ":[/]" or an unclosed bracket, but an explicit comma ":[,]" or parenthesis are required to continue a sequence into the next line.
 
 sub1	Comments
 
-In-line to end of line comments can be introduced with any of:
-
-eg
-	--	Haskell, SQL etal style
-	//	Java, C, etal style
-	#	Perl, Python, Ruby etal style
+In-line to end of line comments can be introduced with either "--" or "//".
 
 sub1	Predefined Rules
 
@@ -69,12 +64,12 @@ eg
 
 sub1	Rule Names References
 
-A rule name may be a simple local name reference, or a fully qualified name: grammar.rule, where the grammar name may have any number of dot separated name parts. A short name that is not defined as a local rule can refer to an external grammar rule with the same name through an anonymous "catch-all" import rule:
+A rule reference may be a simple local name, or a fully qualified name: grammar.rule, where the grammar name may have any number of dot separated name parts. A simple name that is not defined as a local rule can refer to an external grammar using the import directive:
 
 eg
-	_ = grammar._    -- the ._ suffix is optional
+	@import grammar
 
-There can be a list of external grammars in these "import" rules, they are searched in the order given.
+You can use a space separated list of external grammar names in one or more :[@import] directive, they are searched in the order given.
 
 sub1	Choice Operators
 
@@ -97,13 +92,6 @@ Traditional BNF notations are also available:
 eg
 	{ X }		zero or more X, same as X*
 	[ X ]		optional X, same as X?
-
-The number of repeats may be specified explicitly, for example:
- 
-eg
-	X*4		match exactly 4 times
-	X*4.._		match 4 or more times
-	X*4..8		match a min of 4 to a max of 8 times
 
 
 sub1	Literal Values

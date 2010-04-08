@@ -42,23 +42,10 @@ Date
 
 public class Gist {
 
-//	static Parser gist;
 	static Rules gist;
-
-	// static HashMap<String,Parser> library = new HashMap<String,Parser>();
-	// 
-	// static {
-	// 	Map<String,String> grammars=Library.grammars;
-	// 	for (String label: grammars.keySet()) {
-	// 		Gist gist=new Gist(grammars.get(label));
-	// 		library.put(label,gist.parser);
-	// 	}
-	// }
 
 	String grammar; // source rules
 	Rules rules; // Op rules for this grammar
-//	Parser parser; // parser for this grammar
-	
 
 	/**
 	The basic constructor takes grammar rules.
@@ -75,10 +62,9 @@ public class Gist {
 		if (lines.length<1) throw new IllegalArgumentException("Missing grammar...");
 		else if (lines.length==1) grammar=lines[0];
 		else grammar=concat(lines);
-		if (gist==null) { gist=bootstrap(); } //System.out.println(gist); }
+		if (gist==null) { gist=bootstrap(); }
 		Term tree=gist.parse(grammar);
 		if (!tree.isTag("rules")) throw new GistFault("Grammar rules fault:\n"+tree);
-//		parser=new Parser(Grammar.rules(tree));
 		rules=Grammar.rules(tree);
 	}
 	
@@ -90,29 +76,6 @@ public class Gist {
 		return Grammar.rules(gistTree);
 	}
 
-/*	Parser bootstrap() {
-		Parser boot=new Parser(Boot.rules());
-		Term bootTree=boot.parse(Grammar.gistGrammar);
-		Parser gistBoot=new Parser(Boot.rules(bootTree));
-		Term gistTree=gistBoot.parse(Grammar.gistGrammar);
-		return new Parser(Grammar.rules(gistTree));
-	}
-*/
-	// /**
-	// Allows lines of grammar to be writen as list of strings.
-	// @param lines   any number of grammar line string arguments.
-	// @return a new Gist object
-	// @throws	GistFault   an unchecked exception, subclass of RuntimeException,
-	// reports grammar rule faults. Usually a faulty grammar is equivalent to
-	// a source code error, but an application that allows grammar rules to be
-	// edited may choose to catch GistFault exceptions.
-	// */
-	// public static Gist rules(String... lines) {
-	// 	StringBuffer sb=new StringBuffer();
-	// 	for (String line: lines) sb.append(line).append("\n");
-	// 	return new Gist(sb.toString());
-	// }
-	
 	/**
 	Generate a parse tree for the input text.
 	<p>A parse fault (syntax failure, or an incomplete parse) will
@@ -128,28 +91,16 @@ public class Gist {
 	@return root term of the parse tree, or a fault report
 	*/
 	public Term parse(String text) { return rules.parse(text); }
-/*	Term parse(String source) {
-		Parser par=new Parser(source);
-		Rule rule=rules.startRule();
-		boolean result=rule.parse(par);
-		if (!result) return par.faultResult(rule.name+" parse failed... "); 
-		if (pos<eot) return par.faultResult(rule.name+" parse incomplete... "); 
-		return par.root(); //seed.next;
-	}
-*/
 	
-	// /**
-	// assign the given label to this grammar
-	// <p>Load this grammar into the library with the given label.
-	// <p>This method can be used to label a local grammar with a global name.
-	// 
-	// @param label   grammar-name
-	// @return Gist return this grammar
-	// */
-	// public Gist label(String label) {
-	// 	library.put(label,this.parser);
-	// 	return this;
-	// }
+	/**
+	only needed for an application that wants to handle events
+	@param action   an application sub-class implementing the Action i/f
+	*/
+
+	public Gist events(Action action) {
+		rules.action=action;
+		return this;
+	}
 	
 	/**
 	load a grammar into the library
@@ -160,6 +111,18 @@ public class Gist {
 	*/
 	public static void load(String label, String... lines) {
 		Library.put(label,concat(lines));
+	}
+
+	/**
+	assign the given label to this grammar
+	<p>Load this grammar into the library with the given label.
+	
+	@param label   grammar-name
+	@return Gist return this grammar
+	*/
+	public Gist label(String label) {
+		Library.put(label,this);
+		return this;
 	}
 
 	/**
@@ -180,18 +143,6 @@ public class Gist {
 		return grammar;
 	}
 	
-	/**
-	only needed for an application that wants to handle events
-	@param action   an application sub-class implementing the Action i/f
-	*/
-
-	public Gist events(Action action) {
-		rules.action=action;
-		return this;
-	}
-	
-//	static public String gistGrammar() { return Parser.gistGrammar; }
-
 	// -- package internals -----------------------------------------------------------------
 
 	Rule getRule(String name) { return rules.getRule(name); }

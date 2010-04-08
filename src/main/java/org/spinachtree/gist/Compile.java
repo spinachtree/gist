@@ -75,10 +75,9 @@ class Compile {
 	String hostName() { return buildStack.peek(); }
 	Rule hostRule() { return rules.getRule(hostName()); }
 	
-	Op ruleRef(String name) { return ruleRef(null,name,null); }
+	Op ruleRef(String name) { return ruleRef(name,null); }
 
-	Op ruleRef(String path, String name, String elide) {
-		if (path!=null && path.length()>0) return externalRef(path,name,elide);
+	Op ruleRef(String name, String elide) {
 		Rule host=hostRule();
 		Rule rule=buildRule(name);
 		Op op=inline(host,rule);
@@ -106,35 +105,30 @@ class Compile {
 	List<Gist> imports=new ArrayList<Gist>();
 
 	void importRule(Term impt) {
-		// import  = '_' s defn s label '._'? (s ','? s label '._'?)*
-		for (Term label_ : impt)
-			if (label_.isTag("label")) {
-				String label=label_.text();
+		// @import (s label)+
+		for (Term lab : impt)
+			if (lab.isTag("label")) {
+				String label=lab.text();
 				Gist gist=Library.get(label);
 				if (gist==null) noGrammar(label);
 				else imports.add(gist);
 			}
 	}
 
-	Rule importRef(String name) {
+	Rule importRef(String ident) {
+		int i=ident.lastIndexOf('.');
+		if (i>0) { // fully qualified name...
+			String label=ident.substring(0,i);
+			String name=ident.substring(i+1,ident.length());
+			Gist gist=Library.get(label);
+			if (gist==null) return null;
+			return gist.getRule(name);
+		} // simple name...
 		for (Gist gist:imports) {
-			Rule rule=gist.getRule(name);
+			Rule rule=gist.getRule(ident);
 			if (rule!=null) return rule;
 		}
 		return null;
-	}
-
-	Op externalRef(String path, String name, String elide) {
-		// ref = path name elide? 
-		String label=path.substring(0,path.length()-1); // trim final '.'
-		Gist gist=Library.get(label);
-		if (gist==null) { noGrammar(label); return new False(); }
-		Rule rule=gist.getRule(name);
-		if (rule==null) {
-			faultTerm("Undefined external rule: "+path+name);
-			return new False();
-		}
-		return new Ref(rules,hostRule(),rule,(elide!=null));
 	}
 
 	void noGrammar(String label) {

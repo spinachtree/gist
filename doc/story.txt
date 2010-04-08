@@ -69,7 +69,7 @@ When a parser is hand crafted, or built with a parser generator tool, it is buil
 
 sect	Grammar Specifications as Programs
 
-There is often a significant difference between a specification and its implementation. A good specification must be precise, and free of any specific implementation details.
+There is often a significant difference between a specification and its implementation. A good specification must be precise, but free of any programming language details.
 
 A specification will often have a declarative reading, but not necessarily a procedural reading that can be automated. For example, a sorted list can be easily specified, but that does not mean it can be automated as a universal sorting algorithm. An ideal solution has both a declarative and procedural reading, as in a logic-programming language. Fortunately it is not too difficult to ensure that the Gist grammar rules work this way.
 
@@ -92,7 +92,7 @@ After years of fun playing around with grammar rule formats and experimenting wi
 
 *	Formal grammar specifications could easily adopt Gist rules.
 
-*	Gist can automate grammar verification testing and demonstration.
+*	Gist can automate grammar verification, testing and demonstration.
 
 *	A Gist universal parser is quite practical for many applications.
 

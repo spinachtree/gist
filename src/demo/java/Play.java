@@ -26,8 +26,9 @@ public class Play {
 		"file    = record (nl record)*",
 		"record  = field (',' field)*",
 		"field   = chars / escaped",
-		"chars   : (text-quote-',')*", 
-		"escaped = quote (text-quote / quote quote / nl)* quote");
+		"chars   : (text-!QUOT-!',')*", 
+		"escaped = QUOT (text-!QUOT / QUOT QUOT / nl)* QUOT",
+		"@import gist.pragma ");
 
 		System.out.println(csv1.inspect());
 		
@@ -37,7 +38,7 @@ public class Play {
 		System.out.println(tree1);
 		
 
-		Gist list1 = new Gist(" list = int (',' int)* ");
+		Gist list1 = new Gist(" list = int (',' int)*; int='0'..'9'+ ");
 
 		Term nums=list1.parse("1,2,3,4");
 		

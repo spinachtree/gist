@@ -203,16 +203,16 @@ The list of values is realized in most languages as an array, vector, list, or s
 The Gist grammar follows directly from the #JSON specification. Json ignores irrelevant white space, and the ":[~]" symbol is a convenient way to match any white space characters:
 
 eg
-	json   = (object / array) ~              
-	object = ~ '{' ~ pairs? ~ '}'                
+	json   = ~ (object / array) ~              
+	object = '{' ~ pairs? ~ '}'                
 	pairs  = pair (~ ',' ~ pair)*             
 	pair   = string ~ ':' ~ val                
-	array  = ~ '[' ~ vals? ~ ']'                 
+	array  = '[' ~ vals? ~ ']'                 
 	vals   = val (~ ',' ~ val)*                 
 	val    = object/array/string/number        
 	         /true/false/null                  
-	string = quot (chs/esc)* quot            
-	esc    = bs (code / 'u' hex)              
+	string = quot (chs/esc)* quot              
+	esc    = bs (code / 'u' hex hex hex hex)   
 	number = neg? digits frac? exp?            
 	frac   = '.' int                           
 	exp    = ('e'/'E') sign? int               
@@ -224,15 +224,15 @@ eg
 	true   : 'true'                            
 	false  : 'false'                           
 	null   : 'null'                            
-	hex    : (digit/'a'..'f'/'A'..'F')*4       
+	hex    : digit/'a'..'f'/'A'..'F'       
 	code   : bs/fs/quot/'b'/'f'/'n'/'r'/'t'     
 	bs..   : 92   -- back-slash                
 	fs..   : 47   -- forward-slash             
 	quot.. : 34   -- double-quote              
 	chs    : char+                             
-	char   : 0x20..10ffff-quot-bs          
+	char   : 0x20..10ffff-!quot-!bs          
 
-The last rule for "char" uses a "-" to exclude the "quote" and "bs" characters from the wide range of Unicode characters that Json accepts in character strings. This is a convenient syntax for negation, it is discussed more fully later. The ellipsis notation, as in :[bs..], defines a rule that will not appear in the parse tree, just as if it was a quoted literal character.
+The last rule for "char" uses a but-not operator "-!" to exclude the "quote" and "bs" characters from the wide range of Unicode characters that Json accepts in character strings. This is a convenient syntax for negation, it is discussed more fully later. The ellipsis notation, as in :[bs..], defines a rule that will not appear in the parse tree, just as if it was a quoted literal character.
 
 Here is a JSON example (modified from #[RFC 4627]):
 
@@ -353,17 +353,17 @@ sect	External References
 
 Gist can refer to rules defined in an external grammar. This enables a grammar to be composed in modules, and supports the use of common standard rules.
 
-An external reference starts with a grammar name then a dot prefix in front of the rule name (as in fully qualified Java names). For example, a :digit rule can refer to the :Nd, Numeric-digit defined in a :[Unicode] grammar:
+An external reference can use a grammar name dot prefix (as in fully qualified Java names). For example, a :digit rule can refer to the :Nd, Numeric-digit defined in a :[Unicode] grammar:
 
 eg
 	digit = Unicode.Nd
 
-References with the same external name may use a "catch-all" rule to "import" another grammar:
+Simple names that are not defined as local rules can refer to a grammar imported with the directive:
 
 eg
-	_ = Unicode._     -- or:  _ = Unicode
+	@import grammar
 
-Rule names must be unique within a grammar, but external references can import different rules from different grammars that have the same rule name. The parse tree nodes use rule names, but they can be distinguished by their path names in the parse tree. Grammars are named in a separate name space, and these names do not appear in the parse tree.
+Rule names must be unique within a grammar, but an external grammar may define the same rule name. The parse tree nodes are tagged with rule names, but they can be distinguished by their path names in the parse tree. Grammar names do not appear in the parse tree.
 
 
 sect	Negation
@@ -379,10 +379,10 @@ eg
 	quot  : 0x22
 	char  : 9..126
 
-Another way to express this is to use the expression: :[(char-quote)] which will match a :char except if a :quote would match, this is exactly the same as: :[(!quot char)], but it may be easier to read:
+Another way to express this is to use the expression: :[(char-!quote)] which will match a :char, but not if it is a :quote, this is exactly the same as: :[(!quot char)], but it may be easier to read:
 
 eg
-	quote : quot (char-quot)* quot
+	quote : quot (char-!quot)* quot
 
 The parser can compile either of these rules to the equivalent rule:
 
@@ -397,7 +397,7 @@ eg
 	comment : '/*' (!'*/' char)* '*/'
 	char    : 0x9..10FFFD
 
-As before, the expression: :[(char-'*/')] can be used to express the same thing. It will match a :char except if a :['*/'] would match, but in this case there is no way to reduce this into a simple character set.
+As before, the expression: :[(char-!'*/')] can be used to express the same thing. It will match a :char except if a :['*/'] would match, but in this case there is no way to reduce this into a simple character set.
 
 A positive assertion that a rule ~would match, but without matching any input, can be expressed as :[!!x], and this can also be written as :[&x], the PEG notation.
 

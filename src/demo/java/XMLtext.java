@@ -8,7 +8,7 @@ public class XMLtext {
 		"text = (lt/amp/txt)*  ",
 		"lt   : '<'            ",
 		"amp  : '&'            ",
-		"txt  : (char-lt-amp)* ",
+		"txt  : (char-!lt-!amp)* ",
 		"char : 0x1..10ffff    " );
 
 	public static void main(String[] args) {

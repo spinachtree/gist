@@ -17,11 +17,6 @@ class Rules extends Op {
 	String start() { return ruleNames.get(0); }
 	Rule startRule() { return getRule(start()); }
 
-/*	boolean parse(Parser par) {
-		return startRule().parse(par);
-	}
-*/
-	
 	Action action=null; // event interface
 
 	Term parse(String text) {
@@ -110,23 +105,8 @@ class Rule extends Op {
 		return par.apply(memo.result);
 	}
 
-	String me() { return name+(fixed?"":"~")+(term?":":"=")+body+"\n"; }
+	String me() { return name+(fixed?"":"+")+(term?":":"=")+body+"\n"; }
 
 }
 
-// A pseudo Op to hold the list of rule names...  key "=" in ruleMap
-
-/*class Rules extends Rule {
-	Rules(List<String> ruleNames) {
-		this.ruleNames=ruleNames;
-		name=ruleNames.get(0);
-	}
-	List<String> ruleNames;
-	public String toString() {
-		String str="";
-		for (String name:ruleNames) str+=name+" ";
-		return str;
-	}
-}
-*/
 

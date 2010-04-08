@@ -33,7 +33,7 @@ public class GistTest {
 	@Test
 	public void repeatTest() {
 	String repTest= 
-	"	reps  = alpha digit* alpha+ digit*3 alpha*2.._ digit*3..5 0..100*  \n"+
+	"	reps  = alpha digit* alpha+ digit^3 alpha^2.._ digit^3..5 0..100*  \n"+
 	"	alpha : 'a'..'z'/'A'..'Z'         \n"+
 	"	digit : '0'..'9'                  \n";
 
@@ -156,19 +156,45 @@ public class GistTest {
 		assertTrue(am.isTag("Exp"));
 	}
 
-
-	@Test
+/*	@Test
 	public void importTest() {
 		String importTest=
 		"	Imp   = letter Nd (letter/d)*  \n"+
-		"	d     =  gist.pragma.Nd        \n"+
-		"	_     =  gist.pragma._         \n";
+		"	d     =  Nd        \n"+
+		"	_     =>  gist.pragma         \n";
 
 		Gist imp=new Gist(importTest);
 		//System.out.println(imp.inspect());
 		Term t=imp.parse("x42");
 		//System.out.println(t);
 		assertTrue(t.isTag("Imp"));
+	}
+*/	
+	@Test
+	public void importTest() {
+		String importTest=
+		"	Imp   = letter Nd (letter/d)*  \n"+
+		"	d     =  gist.pragma.Nd        \n"+
+		"	@import gist.pragma            \n";
+
+		Gist imp=new Gist(importTest);
+		//System.out.println(imp.inspect());
+		Term t=imp.parse("x42");
+		//System.out.println(t);
+		assertTrue(t.isTag("Imp"));
+	}
+
+	@Test
+	public void priorTest() {
+		String priorTest=
+		"	act  =  '<' name '>' txt '</' @name '>'  \n"+
+		"       txt  : char-!'<'*  \n"+
+		"	@import gist.pragma \n";
+
+		Gist tst=new Gist(priorTest);
+		//System.out.println(tst.inspect());
+		Term t=tst.parse("<foo> hi ho ... </foo>");
+		//System.out.println(t);
 	}
 	
 }

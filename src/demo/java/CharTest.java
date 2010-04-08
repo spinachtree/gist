@@ -9,7 +9,7 @@ public class CharTest {
 		
 		String codesTest=
 		"	codes: 0..9                       \n"+
-		"	gap  : Zg                         \n"+
+		"	gap  : Zgap ; @import gist.pragma                         \n"+
 		"	gap1 : 10/11/12/13/14             \n"+
 		"	gap2 : 10..12                     \n"+
 		"	even : !1 !3 !(5/7/9) codes       \n"+
