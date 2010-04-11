@@ -15,12 +15,12 @@ package org.spinachtree.gist;
 	
 	The bulk of the Ops are expected to be instances of these subclasses:
 		Rule	-- contains the Op expression for a rule
-		Ref	-- a rule name reference, returns the rule.parse(par) result.
+		Ref	-- a rule name reference, returns the rule.parse(scan) result.
 		Chs	-- match next input character into a set of char code ranges.
 	
 	Parse tree building and left recursion is handled in the Rule Op.
 	
-	The input string and parse tree are contained in the Parser object.
+	The input string and parse tree are contained in the Scan object.
 		
 */
 	
@@ -72,36 +72,36 @@ class Op {
 	
 	// parse time methods....................................................
 	
-	boolean parse(Parser par) {
-		int p=par.pos;
-		Term t=par.tip;
-		boolean result = Rep? loop(par) : match(par);
+	boolean parse(Scan scan) {
+		int p=scan.pos;
+		Term t=scan.tip;
+		boolean result = Rep? loop(scan) : match(scan);
 		if (result) {
 			if (And==null) return true;
-			if (And.parse(par)) return true;
-			if (OrMe) return (Or.Or==null || Or.Or.parse(par));
+			if (And.parse(scan)) return true;
+			if (OrMe) return (Or.Or==null || Or.Or.parse(scan));
 		} 
 		if (Or==null || OrMe) return false;
-		par.reset(p,t);
-		return Or.parse(par);
+		scan.reset(p,t);
+		return Or.parse(scan);
 	}
 
-	boolean loop(Parser par) { // elide recursion...
-		int i=par.pos;
-		Term t=par.tip;
+	boolean loop(Scan scan) { // elide recursion...
+		int i=scan.pos;
+		Term t=scan.tip;
 		int k=0;
-		while (k<max && match(par)) {
+		while (k<max && match(scan)) {
 			k+=1; 
-			int j=par.pos;
-			if (i<j) { i=j; t=par.tip; }
+			int j=scan.pos;
+			if (i<j) { i=j; t=scan.tip; }
 			else break;
 		}
 		if (k<min) return false;
-		if (i<par.pos && k!=max) par.reset(i,t);
+		if (i<scan.pos && k!=max) scan.reset(i,t);
 		return true;
 	}
 
-	boolean match(Parser par) { crash(); return false; }
+	boolean match(Scan scan) { crash(); return false; }
 	
 	// reports and faults...........................................................
 
@@ -182,11 +182,11 @@ class Ref extends Op {
 		return null;
 	}
 	
-	boolean match(Parser par) {
+	boolean match(Scan scan) {
 		if (target==null) {
 			resolveTarget();
 			if (target==null) fault("No target for Ref: "+name);
-		} return target.parse(par);
+		} return target.parse(scan);
 	}
 
 	String me() { return name; }
@@ -204,19 +204,19 @@ class Str extends Op {
 	
 	Op copyMe() { return new Str(str); }
 
-	boolean match(Parser par) {
-		if (par.chr!=first) return false;
+	boolean match(Scan scan) {
+		if (scan.chr!=first) return false;
 	//	int cc=str.codePointAt(0);
-	//	if (par.chr!=cc) return false;
+	//	if (scan.chr!=cc) return false;
 		int i=0;
 		int cc=first;
 		while (i<str.length()-1) {
 			i+=(cc<0x10000)? 1:2;
 			cc=str.codePointAt(i);
-			par.advance();
-			if (par.chr!=cc) return false;
+			scan.advance();
+			if (scan.chr!=cc) return false;
 		}
-		par.advance();
+		scan.advance();
 		return true;
 	}
 
@@ -230,8 +230,8 @@ class Grp extends Op {
 
 	Op copyMe() { return new Grp(op); }
 
-	boolean match(Parser par) {
-		return op.parse(par);
+	boolean match(Scan scan) {
+		return op.parse(scan);
 	}
 
 	String me() { return op.toString(); }
@@ -248,11 +248,11 @@ class Not extends Op {
 		return y.except(arg);
 	}
 
-	boolean match(Parser par) {
-		int p=par.pos;
-		Term t=par.tip;
-		boolean result=arg.parse(par);
-		par.reset(p,t);
+	boolean match(Scan scan) {
+		int p=scan.pos;
+		Term t=scan.tip;
+		boolean result=arg.parse(scan);
+		scan.reset(p,t);
 		return !result;
 	}
 
@@ -266,11 +266,11 @@ class Peek extends Op {
 	
 	Op copyMe() { return new Peek(arg); }
 
-	boolean match(Parser par) { 
-		int p=par.pos;
-		Term t=par.tip;
-		boolean result=arg.parse(par);
-		par.reset(p,t);
+	boolean match(Scan scan) { 
+		int p=scan.pos;
+		Term t=scan.tip;
+		boolean result=arg.parse(scan);
+		scan.reset(p,t);
 		return result;
 	}
 
@@ -284,17 +284,17 @@ class Prior extends Op {
 	
 	Op copyMe() { return new Prior(name); }
 
-	boolean match(Parser par) { 
-		Term t=par.tip;
+	boolean match(Scan scan) { 
+		Term t=scan.tip;
 		while (t!=null && !t.isTag(name)) t=t.prior();
 		if (t==null) return false;
 		String txt=t.text();
 		int i=0, cc;
 		while (i<txt.length()) {
 			cc=txt.codePointAt(i);
-			if (cc!=par.chr) return false;
+			if (cc!=scan.chr) return false;
 			i+=(cc<0x10000)? 1:2;
-			par.advance();
+			scan.advance();
 		}
 		return true;
 	}
@@ -318,13 +318,13 @@ class Event extends Op {
 	String name;
 	String args;
 	
-	boolean match(Parser par) {
+	boolean match(Scan scan) {
 		if (rules.action!=null)  
-			return rules.action.event(par,host.name,name,args);
-		System.out.println(par.traceReport("trace "+host.name+": "+name+" "+args));
+			return rules.action.event(scan,host.name,name,args);
+		System.out.println(scan.traceReport("trace "+host.name+": "+name+" "+args));
 		return true;
 	}
-	
+
 	String me() { return "<"+name+" "+args+">"; }
 	
 } // Event
@@ -339,8 +339,8 @@ class WhiteSpace extends Op {
 
 	static Chs ws=new Chs(ranges,ranges.length);
 	
-	boolean match(Parser par) {
-		while (ws.match(par)) {}
+	boolean match(Scan scan) {
+		while (ws.match(scan)) {}
 		return true;
 	}
 	
@@ -351,13 +351,13 @@ class NewLine extends Op {
 
 	// $ match end-of-line: 13 (10/0x85)? / 10 / 0x85 / 0x2028
 
-	boolean match(Parser par) {
-		int ch=par.chr;
-		if (ch==10 || ch==0x85 || ch==0x2028) par.advance();
+	boolean match(Scan scan) {
+		int ch=scan.chr;
+		if (ch==10 || ch==0x85 || ch==0x2028) scan.advance();
 		else if (ch==13) {
-			par.advance();
-			ch=par.chr;
-			if (ch==10 || ch==0x85) par.advance();
+			scan.advance();
+			ch=scan.chr;
+			if (ch==10 || ch==0x85) scan.advance();
 		}
 		return true;
 	}
@@ -369,7 +369,7 @@ class True extends Op {
 
 	Op copyMe() { return this; }
 
-	boolean match(Parser par) { return true; }
+	boolean match(Scan scan) { return true; }
 
 	String me() { return "''"; }
 }
@@ -378,7 +378,7 @@ class False extends Op {
 
 	Op copyMe() { return this; }
 
-	boolean match(Parser par) { return false; }
+	boolean match(Scan scan) { return false; }
 
 	String me() { return "!''"; }
 }

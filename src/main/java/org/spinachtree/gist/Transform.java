@@ -5,7 +5,7 @@ import org.spinachtree.gist.*;
 import java.lang.reflect.*;
 import java.util.*;
 
-public class Transform {
+class Transform {
 	
 	Transform(Class cls) {
 		init(cls);

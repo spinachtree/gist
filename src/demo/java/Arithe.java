@@ -8,7 +8,7 @@ import org.spinachtree.gist.*;
 
 class ArithAct implements org.spinachtree.gist.Action {
 	
-	public boolean event(Parser par,String rule,String event,String args) {
+	public boolean event(Scan scan,String rule,String event,String args) {
 		System.out.println("Event --> "+event);
 		return true;
 	}

@@ -49,10 +49,10 @@ class Chs extends Op {
 		return (y.size==0);
 	}
 
-	boolean match(Parser par) {
-//System.out.println(me()+" pos="+par.pos+" OrMe="+OrMe);
-//		par.chs++;
-		int ch=par.chr;
+	boolean match(Scan scan) {
+//System.out.println(me()+" pos="+scan.pos+" OrMe="+OrMe);
+//		scan.chs++;
+		int ch=scan.chr;
 		int bot=0;
 		int top=size;
 		while (bot<top) {
@@ -60,7 +60,7 @@ class Chs extends Op {
 			if (ch<ranges[pick]) top=pick;
 			else if (ch>ranges[pick+1]) bot=pick+2;
 			else { // ch is in range... advance..
-				par.advance();
+				scan.advance();
 				return true;
 			}
 		}

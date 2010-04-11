@@ -114,10 +114,12 @@ public class Gist {
 	}
 
 	/**
-	assign the given label to this grammar
-	<p>Load this grammar into the library with the given label.
+	put this grammar into the library under the given label
+	<p>A grammar must be loaded into the library for
+		an external reference in another grammar
+		to be able to find it.
 	
-	@param label   grammar-name
+	@param label   grammar name, may use Java package name format
 	@return Gist return this grammar
 	*/
 	public Gist label(String label) {

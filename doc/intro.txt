@@ -12,7 +12,7 @@ Similar benefits are available from a parser generator development environment, 
 
 If a Gist automated parser is available in your programming language (or you write one of your own) then you can use it directly in your applications. The Gist parser will generate a parse tree for ~any Gist grammar in a ~standard parse tree structure. That's great for productivity, and you can always build a ~custom parser for a ~particular Gist grammar if ultimate performance is essential.
 
-Although Gist looks very much like traditional grammar rules it is based on "one-match" rules that are a form of parser expression grammar, #PEG. In practice the "one-match" interpretation is implicitly used by most EBNF or ABNF specifications, but some rules may need to be re-formulated. The expressive power of a Gist grammar goes beyond traditional context-free grammar rules.
+Although Gist looks very much like traditional grammar rules it is based on "one-match" rules that are a form of parser expression grammar, #PEG. In practice the "one-match" interpretation is used by most EBNF or ABNF specifications, but some rules may need to be re-formulated. The expressive power of a Gist grammar goes beyond traditional context-free grammar rules.
 
 
 sect	Gist Features

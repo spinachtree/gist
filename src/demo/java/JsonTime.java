@@ -6,31 +6,10 @@ import java.math.*;
 
 // JSON -- see: http://www.json.org/
 
-public class Json {
+public class JsonTime {
 	
 	public static void main(String[] args) {
 			
-		// Gist json = Gist.rules(
-		// "JSON    = Object / Array",
-		// "Object  = s '{' s Pair (s ',' s Pair)* s '}' s",
-		// "Pair    = String s ':' s Value",
-		// "Array   = s '[' s Value (s ',' s Value)* s ']' s",
-		// "Value   = String / Number / Object / Array / Literal",
-		// "String  = quot (bs escape / chrs)* quot",
-		// "Number  = neg? int frac? expo?",
-		// "Literal : 'true' / 'false' / 'null'",
-		// "neg     : '-'",
-		// "int     : '0' / '1'..'9' '0'..'9'*",
-		// "frac    : '.' '0'..'9'*",
-		// "expo    : ('e'/'E') ('+'/'-')? '0'..'9'+",
-		// "chrs    : (char-quot-bs)*",
-		// "escape  : quot/bs/'/'/'b'/'f'/'n'/'r'/'t'/'u' hex hex hex hex",
-		// "hex     : '0'..'9'/'a'..'f'/'A'..'F'",
-		// "quot    : 0x22 -- double-quote",
-		// "bs      : 0x5C -- backslash",
-		// "s       : (9..13/' ')* -- white space",
-		// "char    : 0x20..10FFFF -- Unicodes, except control chars");
-		
 		Gist json = new Gist(
 		"	json   = ~ (object / array) ~          ",
 		"	object = '{' ~ pairs? ~ '}'            ",
@@ -40,7 +19,7 @@ public class Json {
 		"	vals   =  val (~','~ val)*             ",
 		"	val    = object/array/string/number    ",
 		"	         /true/false/null              ",
-		"	string = quot (chs/esc)* quot          ",
+		"	string = quot (chs/esc)* quot      ",
 		"	esc    = bs (code / 'u' hex hex hex hex)   ",
 		"	number = neg? digits frac? exp?        ",
 		"	frac   = '.' int                       ",
@@ -56,9 +35,9 @@ public class Json {
 		"	hex    : digit/'a'..'f'/'A'..'F'       ",
 		"	code   : bs/fs/quot                    ",
 		"	         /'b'/'f'/'n'/'r'/'t'          ",
-		"	bs..   : 92   -- back-slash            ",
-		"	fs..   : 47   -- forward-slash         ",
-		"	quot.. : 34   -- quote                 ",
+		"	bs..     : 92   -- back-slash            ",
+		"	fs..     : 47   -- forward-slash         ",
+		"	quot..   : 34   -- quote                 ",
 		"	chs    : char+                         ",
 		"	char   : 0x20..10ffff-!quot-!bs      ");
 		
@@ -103,6 +82,14 @@ public class Json {
 		" } \n";
 		Term it=json.parse(image);
 		System.out.println(image +" =>\n"+ it );
+		
+		System.out.println("Run time......");
+		int num=100000;
+		long start=System.nanoTime();
+		for (int i=0;i<num;i++) it=json.parse(image);
+		long end=System.nanoTime();
+		long tt=end-start;
+		System.out.println("Run time......"+tt+" ms="+(tt/1000000)+" ns/p="+(tt/num));
 		
 	}
 	

@@ -3,18 +3,18 @@ package org.spinachtree.gist;
 import java.util.*;
 
 /**
-context for parse operators...
+Input scanner, not usually needed for Gist application users.
 
-<p>The Parser contains the input text, cursor, parse tree term, etc.
+<p>The Scan contains the input text, cursor, parse tree term, etc.
 Normally for private use internal to the parser, but an action
 event handler is given access via public methods.
 </p>
 
 */
 
-public class Parser {
+public class Scan {
 	
-	Parser(String src) {
+	Scan(String src) {
 		input=src;
 		eot=src.length();
 		pos=0;
@@ -24,17 +24,8 @@ public class Parser {
 		peak=0;
 		top=null;
 		memos=new HashMap<Rule,Memo>();
-		fault=null;
 	}
 	
-	Term root() { return seed.next; }
-	
-/*	Parser(Rules rules) { this.rules=rules; }
-	
-	Rules rules;
-	
-	Rule getRule(String name) { return rules.getRule(name); }
-*/	
 	// parse context....................
 	
 	String input; // source text (a String for now)
@@ -50,67 +41,7 @@ public class Parser {
 	Term top;   // peak output term
 	
 	Map<Rule,Memo> memos;
-	Term fault;
 	
-	//	Action action=null; // event interface
-
-/*
-	String start; // first rule name
-	String trace;
-	
-	Rule startRule() {
-		Rule rules=ruleMap.get("=");
-		start=rules.name;
-		return ruleMap.get(start);
-	}
-
-	Term parse(String src, String trace) {
-		Rule rule=startRule(); //ruleMap.get("=");
-		System.out.println("parse: "+rule.name+" trace="+trace);
-		this.trace=trace;
-		return parse(src);
-	}
-*/	
-/*	Term parse(String src) {
-//		if (fault!=null) return fault;
-		input=src;
-		eot=src.length();
-		pos=0;
-		chr=src.codePointAt(pos);
-		seed=new Term("<root>",src,pos,eot);
-		tip=seed; // tree growth tip
-		peak=0;
-		top=null;
-		memos=new HashMap<Rule,Memo>();
-		fault=null;
-		Rule rule=rules.startRule();
-		boolean result=rule.parse(this);
-		if (!result) return faultResult(rule.name+" parse failed... "); 
-		if (pos<eot) return faultResult(rule.name+" parse incomplete... "); 
-		return seed.next;
-	}
-*/
-	Term newTerm(String tag,int p,Term t) {
-		// Term matching input text...
-		Term term = new Term(tag,input,p,pos);
-		term.child=t.next;
-		term.prior=t;
-		t.next=term;
-		tip=term;
-		return term;
-	}
-	
-	void reset(int p, Term t) {
-		if (p>=eot) return;
-		if (pos>peak) { peak=pos; top=tip;}
-		tip=t;
-		t.next=null;
-		if (pos==p) return;
-		pos=p;
-		chr=input.codePointAt(pos);
-	}
-	
-
 	// public interface methods for event actions...............
 	
 	/**
@@ -151,6 +82,54 @@ public class Parser {
 		else chr=input.codePointAt(pos);
 	}
 
+	/**
+	create a new parse tree node
+	<p>matches text from the given position to current cursor,
+	nodes after the given term become children of the new node
+	and the new node becomes the next node after the given term.
+
+	@param p   input cursor start position
+	@param t   tip of parse tree prior to new node
+
+	@return new term
+	*/
+	public Term newTerm(String tag,int p,Term t) {
+		// Term matching input text...
+		Term term = new Term(tag,input,p,pos);
+		term.child=t.next;
+		term.prior=t;
+		t.next=term;
+		tip=term;
+		return term;
+	}
+	
+	/**
+	reset input cursor and parse tree
+	<p>to backtrack after a failure
+
+	@param p   input curson pos
+	@param t   tip of parse tree
+
+	*/
+	public void reset(int p, Term t) {
+		if (p>=eot) return;
+		if (pos>peak) { peak=pos; top=tip;}
+		tip=t;
+		t.next=null;
+		if (pos==p) return;
+		pos=p;
+		chr=input.codePointAt(pos);
+	}
+	
+	/**
+	get root node
+	<p>retrieve root node after the parse is complete
+
+	@return root term
+	*/
+	Term root() { return seed.next; }
+	
+
 	// Memos ---------------------------------------------------------
 
 	Memo memo(Rule rule) {
@@ -180,43 +159,6 @@ public class Parser {
 
 	// -- trace and fault reporting ------------------------------------
 
-/*	public String toString() {
-		String s="grammar:\n";
-		Rule rules=ruleMap.get("=");
-		for (String name: ((Rules)rules).ruleNames) s+=ruleMap.get(name).toString()+"\n";
-		return s;
-	}
-*/	
-/*	public String toString() {
-		String s="grammar:\n";
-		for (Rule rule: ruleMap.values()) s+=rule.toString()+"\n";
-		return s;
-	}
-*/	
-	String show(int i, int j) {
-		String str="<"+i+".."+j+">";
-		if (j<i || i<0 || j<0) return str;
-		if ((j-i)<70) return str+input.substring(i,j);
-		else return str+input.substring(i,i+20)+" ... "+input.substring(j-20,j);
-	}
-		
-	Op fault(Rule rule, Term term, String msg) {
-		// Rule: <name> <term.text>: msg
-		return fault("Rule: "+rule.name+"  "+term.text()+"\n    "+msg);
-	}
-
-	Op fault(String msg) { 
-		Term log=faultTerm(msg);
-		return new False();
-	}
-
-	Term faultTerm(String msg) { 
-		Term log=new Term("-- "+msg,null,0,-1);
-		log.next=fault;
-		fault=log;
-		return log;
-	}
-
 	String traceReport(String msg) {
 		if (peak<pos) peak=pos;
 		Term term=new Term(report(msg),input,pos,peak);
@@ -224,16 +166,12 @@ public class Parser {
 	}
 
 	String report(String msg) {
-		return "-- "+msg+" ("+peak+" of "+eot+")"+trail();
-	}
-
-	String trail() {
+		String report = "-- "+msg+" ("+peak+" of "+eot+")\n";
 		Term t=tip; // last rule term
 		if (top!=null) t=top;
 		List<String> tags=new ArrayList<String>();
 		while (t!=null) { tags.add(t.tag()); t=t.prior; }
-		if (tags.isEmpty()) return "";
-		String report = "\n";
+		if (tags.isEmpty()) return report;
 		int i=tags.size()-2; // ignore <root>
 		if (i>8) { i=6; report+=" ... "; }
 		while (i>=0) report+=tags.get(i--)+" ";
@@ -250,11 +188,7 @@ public class Parser {
 		return seed;
 	}
 	
-/*	public String toString() {
-		return rules.toString();
-	}
-*/
-} // Parser
+} // Scan
 
 
 class Memo {

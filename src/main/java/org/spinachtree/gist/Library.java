@@ -44,7 +44,7 @@ class Library {
 		"APOS: 39 -- &apos;",
 		"LT  : 60 -- &lt;",
 		"GT  : 62 -- &gt;",
-		"BS  : 92 -- backslash, not historic BS backspace",
+		"BSL : 92 -- backslash (ASCII BS is backspace)",
 
 	// Posix standard ASCII char-set names......
 		"ASCII  : 0..127",

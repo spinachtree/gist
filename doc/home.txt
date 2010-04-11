@@ -4,7 +4,7 @@ title	Spinachtree
 
 sect	Welcome
 
-!Gist is a grammar language that is fun to use! It can be used for formal specifications, but it is automated so you can quickly run your grammar on input strings and see the syntax parse tree it generates. You can use it in much the same way that you would use a regular expression, but a grammar gives you more expressive power -- and it's much nicer to read than those cryptic regular expressions.
+!Gist is a grammar language that is very easy to use. It can be used for formal specifications, but it is automated so you can quickly run your grammar on input strings and see the syntax parse tree it generates. You can use it in much the same way that you would use a regular expression, but a grammar gives you more expressive power -- and it's much easier to read than cryptic regular expressions.
 
 The Gist grammar language itself is independent of any programming language. Over time I hope to make available implementations of the automated parser in different programming languages, and a bootstrap kit for other developers, but right now only the Java version is available.
 
@@ -38,7 +38,7 @@ sect	More
 
 Please send me an email....
 
-Peter Cashin: <peter@spinachtree.org>
+Peter Cashin <peter@spinachtree.org>
 
 
 format

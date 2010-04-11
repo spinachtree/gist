@@ -363,7 +363,7 @@ Simple names that are not defined as local rules can refer to a grammar imported
 eg
 	@import grammar
 
-Rule names must be unique within a grammar, but an external grammar may define the same rule name. The parse tree nodes are tagged with rule names, but they can be distinguished by their path names in the parse tree. Grammar names do not appear in the parse tree.
+Rule names must be unique within a grammar, but external grammars may define the same rule names. The parse tree nodes are tagged with rule names, but they can be distinguished by their path names in the parse tree. Grammar names do not appear in the parse tree.
 
 
 sect	Negation
@@ -578,6 +578,19 @@ For an implementation of a Gist parser in Java see: #[Gist in Java].
 
 Of course a Gist parser is fully automated, so there is no opportunity to hand craft the abstract syntax tree node structure or fine tune the parser machinery. For ultimate performance and application integration you may need to move to a custom crafted parser for your particular grammar. The #ANTLR software provides excellent tools and documentation to enable you to do that. Terence Parr's book #[Language Implementation Patterns] explains many of the design issues involved in crafting parsers and interpreters.
 
+sect	The Gist Language Syntax
+
+The Gist language itself is designed to be independent of its host programming languages. For this reason the Gist language does not use double-quote or back-slash characters, since they are likely to be used by a host programming language.
+
+A Gist grammar can be represented as a String in Java by wrapping the rules in quotes; but even though the Gist grammar itself avoids double-quote and back-slash characters the end-user grammar may contain them (in Gist single-quotes or in comments), and these will require Java back-slash escapes. To avoid this a Gist specification may prefer to name numeric character code values for these characters, or import Gist standard names such as: QUOT and BSL.
+
+Of course it is not possible to anticipate every programming language syntax, but it is well worth trying to avoid the back-slash escape mess that has plagued regular expressions. Some languages have better facilities for embedding strings, such as special-quotes for raw character strings or here-documents.
+
+Traditional grammar specifications sometimes like to use longer names with hyphens, and for this reason the Gist language avoids using a ":[-]" character and uses ":[-!]" for the "but-not" operator. Hyphens can appear inside Gist grammar rule names.
+
+The Gist language imposes no restrictions or convention on the use of upper and lower case characters in rule names. The ANTLR parser generator tools use the traditional convention that names starting with an upper case letter are tokens (terminal symbols), which roughly corresponds to Gist colon defined terminal string rules. But another upper case conventions uses an upper case letter to start a class name and other higher level structured objects. The Gist language just tries to stay out of the way.
+
+The Gist language is implemented as a Gist grammar that is parsed by a bootstrap grammar, so it is not too difficult to implement other grammar language dialects. For example, the prefix repeat notation used in ABNF, or the PEG grammar rule syntax.
 
 
 sect	Conclusions

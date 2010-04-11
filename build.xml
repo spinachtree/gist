@@ -1,98 +1,83 @@
 <project name="Gist" default="build">
 
-	<property name="src" location="src/main/java/org/spinachtree/gist"/>
+<property name="src" location="src/main/java/org/spinachtree/gist"/>
 
-    <target name="clean">
-        <delete dir="target"/>
-    </target>
+<target name="clean">
+    <delete dir="target"/>
+</target>
 
-    <target name="init">
-        <mkdir dir="target/main"/>
-    </target>
+<target name="init">
+    <mkdir dir="target/main"/>
+</target>
 
-  <target name="build" depends="clean,init,compile,jar,test"/>
+<target name="build" depends="clean,init,compile,jar,test"/>
 
 <!-- gist package......................................................................... -->
 
-	<target name="compile">
-	    <javac srcdir="${src}" destdir="target/main" />
-	</target>
+<target name="compile">
+    <javac srcdir="${src}" destdir="target/main" />
+</target>
 
-<!--	
-    <target name="compile" depends="parser">
-        <javac srcdir="${src}" destdir="target/main" 
-		includes="Gist.java,GistGrammar.java"/>
-    </target>
-    <target name="parser" depends="parseOps">
-        <javac srcdir="${src}" destdir="target/main"
-		includes="Parser.java,Boot.java"/>
-    </target>
-    <target name="parseOps" depends="scan">
-        <javac srcdir="${src}" destdir="target/main"
-		includes="Op.java,Chs.java,Rule.java,Action.java"/>
-    </target>
-    <target name="scan">
-        <javac srcdir="${src}" destdir="target/main"
-		includes="Term.java,Library.java,Transform.java"/> 
-    </target>
--->
-    <!-- build jar....................................................................... -->
+<!-- build jar....................................................................... -->
 
-    <target name="jar" depends="compile">
-	<buildnumber file="build.num"/>
-        <jar destfile="gist.jar" basedir="target/main" >
-            <manifest>
-                <attribute name="Built-By" value="Peter Cashin, peter@spinachtree.org"/>
-                <attribute name="Main-Class" value="org.spinachtree.gist.Gist"/>
-                <attribute name="Implementation-Version" value="1.4.${build.number}"/>
-            </manifest>
-        </jar>
-    </target>
+<target name="jar" depends="compile">
+    <buildnumber file="build.num"/>
+    <jar destfile="gist.jar" basedir="target/main" >
+        <manifest>
+            <attribute name="Built-By" value="Peter Cashin, peter@spinachtree.org"/>
+            <attribute name="Main-Class" value="org.spinachtree.gist.Gist"/>
+            <attribute name="Implementation-Version" value="1.4.${build.number}"/>
+        </manifest>
+    </jar>
+</target>
 
 <!-- test................................................................................... -->
 
-    <property name="junit" location="/Users/peter/Downloads/junit-4.7.jar"/>
+<property name="junit" location="/Users/peter/Downloads/junit-4.7.jar"/>
 
-    <target name="test" depends="test.compile,test.run"/>
+<target name="test" depends="test.compile,test.run"/>
 
-    <target name="test.compile">
-        <delete dir="target/test"/>
-        <mkdir dir="target/test"/>
-        <javac srcdir="src/test/java" destdir="target/test"
+<target name="test.compile">
+    <delete dir="target/test"/>
+    <mkdir dir="target/test"/>
+    <javac srcdir="src/test/java" destdir="target/test"
 		classpath="gist.jar:${junit}" />
-    </target>
+</target>
 
-    <target name="test.run" depends="test.compile">
+<target name="test.run" depends="test.compile">
 	<java classname="GistTest" classpath="target/test:gist.jar:${junit}" />
-    </target>
+</target>
 
-    <target name="overruns" depends="test.compile">
+<target name="overruns" depends="test.compile">
 	<java classname="Overruns" classpath="target/test:gist.jar:${junit}" />
-    </target>
+</target>
 
-    <target name="actiontest" depends="test.compile">
+<target name="actiontest" depends="test.compile">
 	<java classname="ActionTest" classpath="target/test:gist.jar:${junit}" />
-    </target>
+</target>
 
-    <target name="priortest" depends="test.compile">
+<target name="priortest" depends="test.compile">
 	<java classname="PriorTest" classpath="target/test:gist.jar:${junit}" />
-    </target>
+</target>
+
+<target name="jsontime" depends="test.compile">
+	<java classname="JsonTime" classpath="target/test:gist.jar:${junit}" />
+</target>
 
 <!-- javaDoc...................................................................... -->
 
-	<target name="doc">
-		<javadoc destdir="target/web/gist/java/"
-			packagenames="org.spinachtree.gist.*">
-		</javadoc>
-	</target>
+<target name="doc">
+	<javadoc destdir="target/web/gist/java/"
+		packagenames="org.spinachtree.gist.*">
+	</javadoc>
+</target>
 
-	<target name="xdoc">
-		<javadoc destdir="target/web/gist/java/"
-			sourcefiles="${src}/Term.java, ${src}/Scan.java,
-				${src}/Action.java, ${src}/Gist.java">
-		</javadoc>
-	</target>
-
+<target name="xdoc">
+	<javadoc destdir="target/web/gist/java/"
+		sourcefiles="${src}/Term.java, ${src}/Scan.java,
+			${src}/Action.java, ${src}/Gist.java">
+	</javadoc>
+</target>
 
 
 <!-- HTML docs.... tad html translator.....  -->
@@ -126,56 +111,54 @@
 
 <!-- MOT PROSE ... html translator...................................................................... -->
 
-	<property name="prose.home" value="/Users/peter/Scala/prose" />
-	<property name="scala.home" value="/Users/peter/Downloads/scala-2.7.5.final" />
-	<property name="scala-library.jar" value="${scala.home}/lib/scala-library.jar" />
+<property name="prose.home" value="/Users/peter/Scala/prose" />
+<property name="scala.home" value="/Users/peter/Downloads/scala-2.7.5.final" />
+<property name="scala-library.jar" value="${scala.home}/lib/scala-library.jar" />
 
-	<property name="gist.jar" location="${basedir}/gist.jar"/> <!-- "/Users/peter/Java/gist/gist-1.1/gist.jar" -->
+<property name="gist.jar" location="${basedir}/gist.jar"/> <!-- "/Users/peter/Java/gist/gist-1.1/gist.jar" -->
 
-	<path id="prose.cp">
-	  <pathelement location="${prose.home}/target"   />
-	  <pathelement location="${scala-library.jar}"   />
-	  <pathelement location="${gist.jar}"   />
-	</path>
-	
-
-	<target name="mot.intro">
-		<java classname="Prose" classpathref="prose.cp" >
-		<arg value="${basedir}/doc/intro.txt"/>
-		</java>
-	</target>
-
-	<target name="mot.guide">
-		<java classname="Prose" classpathref="prose.cp" >
-		<arg value="${basedir}/doc/guide.txt"/>
-		</java>
-	</target>
-
-	<target name="mot.story">
-		<java classname="Prose" classpathref="prose.cp" >
-		<arg value="${basedir}/doc/story.txt"/>
-		</java>
-	</target>
-
-	<target name="mot.ref">
-		<java classname="Prose" classpathref="prose.cp" >
-		<arg value="${basedir}/doc/ref.txt"/>
-		</java>
-	</target>
-
-	<target name="mot.lazy">
-		<java classname="Prose" classpathref="prose.cp" >
-		<arg value="${basedir}/doc/lazy.txt"/>
-		</java>
-	</target>
-
-	<target name="mot.home">
-		<java classname="Prose" classpathref="prose.cp" >
-		<arg value="${basedir}/doc/home.txt"/>
-		</java>
-	</target>
+<path id="prose.cp">
+  <pathelement location="${prose.home}/target"   />
+  <pathelement location="${scala-library.jar}"   />
+  <pathelement location="${gist.jar}"   />
+</path>
 
 
+<target name="mot.intro">
+	<java classname="Prose" classpathref="prose.cp" >
+	<arg value="${basedir}/doc/intro.txt"/>
+	</java>
+</target>
+
+<target name="mot.guide">
+	<java classname="Prose" classpathref="prose.cp" >
+	<arg value="${basedir}/doc/guide.txt"/>
+	</java>
+</target>
+
+<target name="mot.story">
+	<java classname="Prose" classpathref="prose.cp" >
+	<arg value="${basedir}/doc/story.txt"/>
+	</java>
+</target>
+
+<target name="mot.ref">
+	<java classname="Prose" classpathref="prose.cp" >
+	<arg value="${basedir}/doc/ref.txt"/>
+	</java>
+</target>
+
+<target name="mot.lazy">
+	<java classname="Prose" classpathref="prose.cp" >
+	<arg value="${basedir}/doc/lazy.txt"/>
+	</java>
+</target>
+
+<target name="mot.home">
+	<java classname="Prose" classpathref="prose.cp" >
+	<arg value="${basedir}/doc/home.txt"/>
+	</java>
+</target>
 
 
 <!-- OLD ... uses Tad .... build web site ....................................  -->
@@ -216,6 +199,8 @@
 
 </target>
 
+<!-- Build web site ..........................................................  -->
+
 <target name="web" >
 	        <delete dir="target/web"/>
 	        <mkdir dir="target/web/gist"/>
@@ -225,6 +210,7 @@
 	<java classname="Prose" classpathref="prose.cp" >
 		<arg line="doc/home.txt target/web/index.html"/>
 	</java>
+
 	<!-- spinachtree.org/gist/ -->
 	<java classname="Prose" classpathref="prose.cp" >
 		<arg line="doc/home.txt target/web/gist/index.html" />
@@ -245,6 +231,7 @@
 		<arg line="doc/lazy.txt target/web/gist/lazy.html" />
 	</java>
 	<copy file="doc/pragma.txt" tofile="target/web/gist/pragma.txt"/>
+
 	<!-- spinachtree.org/gist/java/ -->
 	<java classname="Prose" classpathref="prose.cp" >
 		<arg line="doc/home.txt target/web/gist/java/index.html" />
@@ -252,7 +239,9 @@
 	<java classname="Prose" classpathref="prose.cp" >
 		<arg line="doc/gist.java.txt target/web/gist/java/intro.html" />
 	</java>
+
 	<copy file="gist.jar" tofile="target/web/gist/java/gist.jar"/>
+
 	<!-- spinachtree.org/gist/java/api/ -->
 	<javadoc sourcepath="src/main/java"   destdir="target/web/gist/java/api"
 		packagenames="org.spinachtree.gist">
@@ -274,24 +263,6 @@
     <target name="ex" depends="demo">
 	<java classname="${D}" classpath="gist.jar:target/demo" />
     </target>
-
-    <target name="Arith" depends="demo">
-	<java classname="Arith" classpath="gist.jar:target/demo" />
-    </target>
-
-    <target name="lefty" depends="demo">
-	<java classname="Lefty" classpath="gist.jar:target/demo" />
-    </target>
-
-    <target name="twister" depends="demo">
-	<java classname="TwistedLR" classpath="gist.jar:target/demo" />
-    </target>
-
-    <target name="XXXX" depends="demo">
-	<java fork="true" classname="XXXX" 
-		classpath="gist.jar:target/demo:${xerces}/xercesImpl.jar:${xerces}/xml-apis.jar" />
-    </target>
-	<property name="xerces" location="/Users/petercashin/Downloads/xerces-2_9_1"/>
 
     <target name="eg" depends="demo" >
 	<input message="Please enter class name:" addproperty="cls" />
