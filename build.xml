@@ -1,3 +1,19 @@
+<!-- gist package......................................................................... 
+
+Refer to spinachtree.org/gist for documentation and gist.jar.
+
+To build from source:
+
+ant
+or
+ant build
+
+-- will compile source, build gist.jar and run some tests.
+
+-- see run demos below to run demos from src/demo/java
+
+-->
+
 <project name="Gist" default="build">
 
 <property name="src" location="src/main/java/org/spinachtree/gist"/>
@@ -12,7 +28,7 @@
 
 <target name="build" depends="clean,init,compile,jar,test"/>
 
-<!-- gist package......................................................................... -->
+<!-- gist compile......................................................................... -->
 
 <target name="compile">
     <javac srcdir="${src}" destdir="target/main" />
@@ -30,6 +46,34 @@
         </manifest>
     </jar>
 </target>
+
+<!-- run demos...................................................................... 
+
+ant eg    --will prompt you for a class name from src/demo/java, eg Arith
+
+or you may prefer to use:
+
+ant ex -DD=Arith     -- or any other class name from src/demo/java
+
+-->
+
+<target name="eg" depends="demo" >
+	<input message="Please enter class name:" addproperty="cls" />
+	<java fork="true" classname="${cls}" classpath="gist.jar:target/demo" />
+</target>
+
+<target name="demo">
+    <delete dir="target/demo"/>
+    <mkdir dir="target/demo"/>
+    <javac srcdir="src/demo" destdir="target/demo" classpath="gist.jar" />
+</target>
+
+<property name="D" value="Arith"/> <!-- ant ex -DD=Another  to run any Another demo  -->
+
+<target name="ex" depends="demo">
+	<java classname="${D}" classpath="gist.jar:target/demo" />
+</target>
+
 
 <!-- test................................................................................... -->
 
@@ -79,37 +123,13 @@
 	</javadoc>
 </target>
 
+<!-- MOT PROSE ... html translator...................................................................... 
 
-<!-- HTML docs.... tad html translator.....  -->
+The document source text is in doc/ files, but the HTML versions are translated with 
+the Prose application which is not included in this repo. 
+You can read the HTML versions and Javvadoc API at: spinachtree.org
 
-	<target name="tad" depends="tad.compile,tad.gist,tad.java,tad.lazy" />
-
-	<target name="tad.compile">
-	        <mkdir dir="target/demo"/>
-		<javac srcdir="src/demo/java" destdir="target/demo"
-			classpath="gist.jar"
-			includes="Tad.java"/>
-	</target>
-
-	<target name="tad.gist">
-		<java classname="Tad" classpath="gist.jar:target/demo">
-			<arg value="doc/Gist.tad" />
-		</java>
-	</target>
-
-	<target name="tad.java">
-		<java classname="Tad" classpath="gist.jar:target/demo">
-			<arg value="doc/GistJava.tad" />
-		</java>
-	</target>
-
-	<target name="tad.lazy">
-		<java classname="Tad" classpath="gist.jar:target/demo">
-			<arg value="doc/LazyCashinParser.tad" />
-		</java>
-	</target>
-
-<!-- MOT PROSE ... html translator...................................................................... -->
+-->
 
 <property name="prose.home" value="/Users/peter/Scala/prose" />
 <property name="scala.home" value="/Users/peter/Downloads/scala-2.7.5.final" />
@@ -158,45 +178,6 @@
 	<java classname="Prose" classpathref="prose.cp" >
 	<arg value="${basedir}/doc/home.txt"/>
 	</java>
-</target>
-
-
-<!-- OLD ... uses Tad .... build web site ....................................  -->
-
-<target name="tad.web" depends="tad.compile">
-	        <delete dir="target/web"/>
-	        <mkdir dir="target/web/gist"/>
-	        <mkdir dir="target/web/gist/java"/>
-
-	<!-- spinachtree.org/ -->
-	<java classname="Tad" classpath="gist.jar:target/demo">
-		<arg line="doc/home.tad target/web/index.html" />
-	</java>
-	<!-- spinachtree.org/gist/ -->
-	<java classname="Tad" classpath="gist.jar:target/demo">
-		<arg line="doc/home.tad target/web/gist/index.html" />
-	</java>
-	<java classname="Tad" classpath="gist.jar:target/demo">
-		<arg line="doc/Gist.tad target/web/gist/intro.html" />
-	</java>
-	<java classname="Tad" classpath="gist.jar:target/demo">
-		<arg line="doc/LazyCashinParser.tad target/web/gist/lazy.html" />
-	</java>
-	<copy file="doc/pragma.txt" tofile="target/web/gist/pragma.txt"/>
-	<!-- spinachtree.org/gist/java/ -->
-	<java classname="Tad" classpath="gist.jar:target/demo">
-		<arg line="doc/home.tad target/web/gist/java/index.html" />
-	</java>
-	<java classname="Tad" classpath="gist.jar:target/demo">
-		<arg line="doc/GistJava.tad target/web/gist/java/intro.html" />
-	</java>
-	<copy file="gist.jar" tofile="target/web/gist/java/gist.jar"/>
-	<!-- spinachtree.org/gist/java/api/ -->
-	<javadoc destdir="target/web/gist/java/api"
-		sourcefiles="${src}/Gist.java,
-			${src}/Term.java">
-	</javadoc>
-
 </target>
 
 <!-- Build web site ..........................................................  -->
@@ -248,26 +229,5 @@
 	</javadoc>
 
 </target>
-
-
-<!-- run demos...................................................................... -->
-
-    <target name="demo">
-        <delete dir="target/demo"/>
-        <mkdir dir="target/demo"/>
-        <javac srcdir="src/demo" destdir="target/demo" classpath="gist.jar" />
-    </target>
-
-    <property name="D" value="Arith"/> <!-- ant ex -DD=Another  to run any Another demo  -->
-
-    <target name="ex" depends="demo">
-	<java classname="${D}" classpath="gist.jar:target/demo" />
-    </target>
-
-    <target name="eg" depends="demo" >
-	<input message="Please enter class name:" addproperty="cls" />
-	<java fork="true" classname="${cls}" classpath="gist.jar:target/demo" />
-    </target>
-
 
 </project>
