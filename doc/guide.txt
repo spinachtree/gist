@@ -483,9 +483,9 @@ sub1	Off-side Rules
 
 A computer programming language is said to employ an  #[off-side] rule if it uses indentation to express nested scope of declarations.
 
-The ABNF specification uses an off-side rule to allow a grammar rule to continue on the next line provided that each following line has a larger inset than the inset of the first line of the rule. This is simple to define informally, and it is easy to use, but it requires a context-sensitive grammar since the inset margin for the first line of a rule can be an arbitrary width.
+The ABNF specification used an off-side rule to allow a grammar rule to continue on the next line provided that the following line had a larger inset than the inset of the first line of the rule. This is simple to define informally, and it is easy to use, but it requires a context-sensitive grammar since the inset of the first line of a rule can be an arbitrary width. The ABNF rule for ABNF actually allows any line that is inset from the left margin.
 
-The :[@] same-match operator can be used to define this off-side rule. It allows subsequent lines to be "folded" under the first line with a larger inset:
+The :[@] same-match operator can be used to define the desired margin off-side rule. It allows subsequent lines to be "folded" under the first line with a larger inset:
 
 eg
 	lines  = inset line (fold line)*
@@ -553,11 +553,13 @@ It is almost always possible to design a new grammar with PEG rules, but occasio
 
 sect	Events
 
-Events provide an escape mechanism to enable a Gist parser to interact with an external application program. They can be used as a debug tool, and they enable an application to process parsed terms "on-the-fly" as the parse proceeds. The event action interface allows an application program to execute input matchers, constraints and semantic methods. External actions can only be defined with prose narrative or a specific programming language implementation. It is best to avoid event driven actions in a grammar specification.
+Events provide an escape mechanism to enable a Gist parser to interact with an external application program. They can be used as a debug tool, and they enable an application to process parsed terms "on-the-fly" as the parse proceeds. The event action interface allows an application program to implement arbitrary input matchers, constraints and semantic methods. 
 
-An :[<event>] can be inserted anywhere in a grammar, and whenever the parser reaches that point in evaluating a grammar rule it will invoke an interface, and wait for the application environment to respond. A default action event handler can simply print out the name of the action with a progress report to trace the progress of the parser showing the scanner position in the input string.
+The problem with external actions is that they are unlikely to have a specification that is a concise and easy to understand. They are usually only defined with a prose narrative, or perhaps an example implementation in some programming language. It is therefore best to avoid event driven actions in standard grammar specifications.
 
-An event driven action allows an application to process parsed terms before a complete parse tree is constructed. This can be useful if the parse tree is expected to be very large, or if the input is a stream with an unknown duration. Any Gist grammar can be used to implement an event driven model by adding :[<namedEvent>] elements into the grammar rules at any desired point, and writing an application processor to handle the action event stream.
+An :[<event>] can be inserted anywhere in a Gist grammar, and whenever the parser reaches that point in evaluating a grammar rule it will invoke an interface, and wait for the application environment to respond. A default action event handler can simply print out the name of the event with a trace showing the scanner position in the input string.
+
+An event driven action can be used to allow an application to process parsed terms before a complete parse tree is constructed. This can be useful if the parse tree is expected to be very large, or if the input is a stream with an unknown duration. Any Gist grammar can be used to implement an event driven model by adding :[<namedEvent>] elements into the grammar rules at any desired point, and writing an application processor to handle the event stream.
 
 The event action interface allows an application to cause the parse to fail, or to consume additional input, and to abandon parse tree elements that are no longer required. This enables a parser to implement arbitrary input matchers, constraints and semantic predicates.
 
@@ -582,13 +584,13 @@ sect	The Gist Language Syntax
 
 The Gist language itself is designed to be independent of its host programming languages. For this reason the Gist language does not use double-quote or back-slash characters, since they are likely to be used by a host programming language.
 
-A Gist grammar can be represented as a String in Java by wrapping the rules in quotes; but even though the Gist grammar itself avoids double-quote and back-slash characters the end-user grammar may contain them (in Gist single-quotes or in comments), and these will require Java back-slash escapes. To avoid this a Gist specification may prefer to name numeric character code values for these characters, or import Gist standard names such as: QUOT and BSL.
+A Gist grammar can be represented as a String in a language such as Java by wrapping the rules in quotes; but even though the Gist grammar itself avoids double-quote and back-slash characters the end-user grammar may contain them (in Gist single-quotes or in comments), and these will require Java back-slash escapes. To avoid this a Gist specification can name numeric character code values for these characters, or import standard predefined names such as: QUOT and BSL.
 
 Of course it is not possible to anticipate every programming language syntax, but it is well worth trying to avoid the back-slash escape mess that has plagued regular expressions. Some languages have better facilities for embedding strings, such as special-quotes for raw character strings or here-documents.
 
 Traditional grammar specifications sometimes like to use longer names with hyphens, and for this reason the Gist language avoids using a ":[-]" character and uses ":[-!]" for the "but-not" operator. Hyphens can appear inside Gist grammar rule names.
 
-The Gist language imposes no restrictions or convention on the use of upper and lower case characters in rule names. The ANTLR parser generator tools use the traditional convention that names starting with an upper case letter are tokens (terminal symbols), which roughly corresponds to Gist colon defined terminal string rules. But another upper case conventions uses an upper case letter to start a class name and other higher level structured objects. The Gist language just tries to stay out of the way.
+The Gist language imposes no restrictions or conventions on the use of upper and lower case characters in rule names. The ANTLR parser generator tools use the traditional convention that names starting with an upper case letter are tokens (terminal symbols), which roughly corresponds to Gist colon defined terminal string rules. But another upper case conventions uses an upper case letter to start a class name and other higher level structured objects. The Gist language just tries to stay out of the way.
 
 The Gist language is implemented as a Gist grammar that is parsed by a bootstrap grammar, so it is not too difficult to implement other grammar language dialects. For example, the prefix repeat notation used in ABNF, or the PEG grammar rule syntax.
 

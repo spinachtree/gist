@@ -1,0 +1,434 @@
+title	Gist In Java
+
+sect	Introduction
+
+This note discusses an implementation of the Gist grammar language in Java.
+
+Documentation and a download jar are available at: @[http://spinachtree.org/gist]
+
+Most applications will only need two classes:
+
+terms
+	Gist	which takes a text string to define a set of grammar rules, and constructs a Gist parser.
+	
+	Term	representing a parse tree node, the result of parsing an input string with a Gist parser.
+	
+A first example:
+
+eg
+	import org.spinachtree.gist.*;
+
+	public class Date {
+	
+		public static void main(String[] args) {
+		
+			String ymdRules =
+			
+			"Date  = year '-' month '-' day         \n"+
+			"year  : d d d d                        \n"+
+			"month : d d?                           \n"+
+			"day   : d d?                           \n"+
+			"d     : '0'..'9'                       \n";
+
+			Gist ymd = new Gist(ymdRules);
+		
+			Term date=ymd.parse("2009-8-7");
+	
+			System.out.println("Month = "+date.text("month"));
+
+			System.out.println(date);
+		}
+	}
+
+The example will print:
+
+eg
+	Month = 8
+	Date
+	    year    "2009"
+	    month   "8"
+	    day     "7"
+
+The Gist class compiles the grammar rules into a parser, and this is usually used as a fixed program code element. The next example therefore creates a static final Gist instance, it also uses a little cosmetic help by using a list of arguments for lines of the grammar.
+
+eg
+	import org.spinachtree.gist.*;
+
+	public class Date {
+	
+		static final Gist ymd = new Gist(
+		
+		"Date  = year '-' month '-' day  ",
+		"year  : d d d d                 ",
+		"month : d d?                    ",
+		"day   : d d?                    ",
+		"d     : '0'..'9'                ");
+
+		public static void main(String[] args) {
+		
+			String in="2009-8-7";
+			if (args.length>0) in=args[0];
+			
+			Term date = ymd.parse(in);
+	
+			if (date.isTag("Date"))
+				System.out.println("Month = "+date.text("month"));
+			else
+				System.out.println(date);
+		}
+	}
+
+If the parse fails it will not throw an exception, it will return a parse tree root term that contains a fault report. For a successful parse the result will be a term with the a tag name matching the start rule name, and this will not be true for a fault report. The :[toString()] method will return a string representing the parse tree, or a fault report with a partial tree.
+
+
+sub1	String Replacement Translator
+
+The next example is a translator that will replace each XML syntax character in a text string with the corresponding XML entity (so that the text can be used in a web page):
+
+eg
+	import org.spinachtree.gist.*;
+
+	public class XMLtext {
+	
+		static final Gist xmlChars = new Gist(
+		
+			"text = (lt/amp/txt)*  ",
+			"lt   : '<'            ",
+			"amp  : '&'            ",
+			"txt  : char-!lt-!amp+   ",
+			"char : 0x1..10ffff    " );
+
+		public static void main(String[] args) {
+	                String in = "if (X < Y && Z) then ...";
+	                if (args.length>0) in = args[0];
+	                System.out.println( in +" => "+ xmlText(in) );
+		}	
+
+		static String xmlText(String in) {
+			StringBuilder out=new StringBuilder();
+			Term tree=xmlChars.parse(in);
+			for (Term term: tree) {
+			    if (term.isTag("txt")) out.append(term.text());
+			    else if (term.isTag("lt")) out.append("&lt;");
+			    else if (term.isTag("amp")) out.append("&amp;");
+			}
+			return out.toString();
+		}
+	}
+
+This will print:
+
+eg
+	if (X < Y && Z) then ... => if (X &lt; Y &amp;&amp; Z) then ...
+
+It is often convenient to iterate over the children of a parse tree :Term with a :for loop, as used here, but a more complex tree navigation may choose to follow the :[child()] and :[next()] links explicitly.
+
+The grammar will match a :txt rule to each sub-string without any special XML characters, which is convenient for the translator. The grammar would match the same input if the :txt rule just matched a single character, but the translator would do a lot more work.
+
+
+sub1	Arithmetic Expression Evaluation:
+
+eg
+	import org.spinachtree.gist.*;
+
+	public class Arith {
+	
+		// Parser Expression Grammar style.
+		// - simple to read
+		// - operator precedence levels: op2 > op1
+		// - flat lists, left association delegated to evaluation
+
+		static final Gist exp = new Gist(
+		
+			"exp   = term (op1 term)*    ",
+			"term  = val (op2 val)*      ",
+			"val   = int / '(' exp ')'   ",
+			"op1   : '+' / '-'           ",
+			"op2   : '*' / '/'           ",
+			"int   : '0'..'9'+           ");
+
+		static int calc(Term t) { 
+			if (t.tag()=="int")
+				return Integer.parseInt(t.text());
+			// t = x (op y)*
+			Term x=t.child();
+			return reduceLeft(calc(x), x.next());
+		}
+
+		static int reduceLeft(int i, Term op) {
+			// i (op y)*
+			if (op==null) return i;
+			Term y=op.next();
+			int j=calc(y);
+			if      (op.isText("+")) i+=j;
+			else if (op.isText("-")) i-=j;
+			else if (op.isText("*")) i*=j;
+			else if (op.isText("/")) i/=j;
+			else throw new UnsupportedOperationException(op.text());
+			return reduceLeft(i, y.next());
+		}	
+
+		public static void main(String[] args) {
+			
+			String in="1+2+3*(3-4/2+1)-4";
+			if (args.length>0) in=args[0];
+		
+			Term tree=exp.parse(in);
+		
+			System.out.println( in +" =>\n"+ tree );
+		
+			if (tree.isTag("exp")) // valid parse tree....
+				System.out.println( in +" = "+ calc(tree) );
+		}
+	}
+
+This program prints:
+
+eg
+	1+2+3*(3-4/2+1)-4 =>
+	exp
+		term	val	int	"1"
+		op1	"+"
+		term	val	int	"2"
+		op1	"+"
+		term
+			val	int	"3"
+			op2	"*"
+			val	exp
+				term	val	int	"3"
+				op1	"-"
+				term
+					val	int	"4"
+					op2	"/"
+					val	int	"2"
+				op1	"+"
+				term	val	int	"1"
+		op1	"-"
+		term	val	int	"4"
+	1+2+3*(3-4/2+1)-4 = 5
+
+The parse tree is shown in a compact format which allows singleton child nodes to appear on the same line as their parents. Sibling children nodes always appear aligned in a column with the same inset, which shows the nesting level, and mostly they will be inset under their parent node as expected. However they may use a smaller inset when they have a chain of singleton parents. The tree structure should be apparent after a little study, and the format helps readability for larger parse tree structures.
+
+The parse tree has the structure: :[(1+2+(3*(3-(4/2)+1))-4)]
+
+The evaluation of the arithmetic expression works on lists of operands: :[(a.b.c...)], where "." represents any operator. The parser has dealt with operator precedence, so each list of operands can be left-reduced: :[(((a.b).c)...)].
+
+
+
+sub1	JSON Data Language Translator
+
+The Gist grammar for JSON is a simple transliteration from the definition in #Json. The translator to transform the parse tree into Java Objects is shown in full, it fits into half a dozen methods. 
+
+eg
+	import org.spinachtree.gist.*;
+
+	import java.util.*;
+	import java.math.*;
+
+	// JSON -- see: http://www.json.org/
+
+	public class Json {
+	
+		public static void main(String[] args) {
+			
+			static final Gist json = new Gist(
+			"	json   = ~ (object / array) ~             ",
+			"	object = '{' ~ pairs? ~ '}'               ",
+			"	pairs  = pair (~ ',' ~ pair)*             ",
+			"	pair   = string ~ ':' ~ val               ",
+			"	array  = ~ '[' ~ vals? ~ ']'              ",
+			"	vals   = val (~ ',' ~ val)*               ",
+			"	val    = object/array/string/number       ",
+			"	         /true/false/null                 ",
+			"	string = quot (chs/esc)* quot             ",
+			"	esc    = bs (code / 'u' hex hex hex hex)  ",
+			"	number = neg? digits frac? exp?           ",
+			"	frac   = '.' int                          ",
+			"	exp    = ('e'/'E') sign? int              ",
+			"	digits : '0'/'1'..'9' digit*              ",
+			"	int    : digit+                           ",
+			"	digit  : '0'..'9'                         ",
+			"	sign   : '+'/'-'                          ",
+			"	neg    :  '-'                             ",
+			"	true   : 'true'                           ",
+			"	false  : 'false'                          ",
+			"	null   : 'null'                           ",
+			"	hex    : digit/'a'..'f'/'A'..'F'          ",
+			"	code   : bs/fs/quot                       ",
+			"	         /'b'/'f'/'n'/'r'/'t'             ",
+			"	bs..   : 92   -- back-slash               ",
+			"	fs..   : 47   -- forward-slash            ",
+			"	quot.. : 34   -- quote                    ",
+			"	chs    : char+                            ",
+			"	char   : 0x20..10ffff-!quot-!bs          ");
+		
+			String in="{ \"a\" : true, \"b\" : false,"+
+				"\"list\" : [123.45, \"one\\ttwo\", null] }";
+			if (args.length>0) in=args[0];
+		
+			Term tree=json.parse(in);
+		
+			System.out.println( in +" =>\n"+ tree );
+	
+			if (tree.isTag("json")) { // valid parse tree....
+				Object obj=translate(tree.child());
+				System.out.println("Java: "+obj);
+			}
+		}
+
+Running this example prints:
+
+eg
+	{ "a" : true, "b" : false,"list" : [123.45, "one\ttwo", null] } =>
+	 json	object	pairs
+	 	pair
+	 		string	chs	"a"
+	 		val	true	"true"
+	 	pair
+	 		string	chs	"b"
+	 		val	false	"false"
+	 	pair
+	 		string	chs	"list"
+	 		val	array	vals
+	 			val	number
+	 				digits	"123"
+	 				frac	int	"45"
+	 			val	string
+	 				chs	"one"
+	 				esc	code	"t"
+	 				chs	"two"
+	 			val	null	"null"
+	 Java: {"list"=[123.45, one	two, null], "a"=true, "b"=false}
+
+The :translate method walks the tree translating the terms into Java objects:
+
+eg
+		// Simple translation into Java Objects...
+		// JSON allows lists with mixed types, so its hard to do compile-time type checking
+	
+		static Object translate(Term tot) {
+			String tag=tot.tag();
+			if (tag=="object") return objectJson(tot);
+			else if (tag=="array") return arrayJson(tot);
+			else if (tag=="string") return stringJson(tot);
+			else if (tag=="number") return numberJson(tot);
+			else if (tag=="true") return true;
+			else if (tag=="false") return false;
+			else if (tag=="null") return null;
+			else if (tag=="json") return translate(tot.child());
+			else throw new UnsupportedOperationException("json tag: "+tag);
+		}
+	
+		static Map<String,Object>  objectJson(Term obj) {
+			// object = '{' ~ pairs? ~ '}'
+			// pairs  = pair (~ ',' ~ pair)*
+			// pair   = string ~ ':' ~ val
+			Map<String,Object> result=new HashMap<String,Object>();
+			Term pairs=obj.child("pairs");
+			if (pairs==null) return result;
+			for (Term pair: pairs) {
+				String key=pair.text("string");
+				Object val=translate(pair.child("val").child());
+				result.put(key,val);
+			}
+			return result;
+		}
+	
+		static List<Object> arrayJson(Term arr) {
+			// array  = '[' ~ vals? ~ ']'
+			// vals   =  val (~','~ val)*
+			// val    = object/array/string/number
+			//          /true/false/null
+			List<Object> result=new ArrayList<Object>();
+			Term vals=arr.child("vals");
+			if (vals==null) return result;
+			for (Term val: vals) {
+				Object x=translate(val.child());
+				result.add(x);
+			}
+			return result;
+		}
+	
+		static String stringJson(Term str) {
+			// string = quot (chs/esc)* quot
+			// esc    = bs.. (code / 'u' hex)
+			StringBuilder s=new StringBuilder();
+			Term x=str.child();
+			while (x!=null) {
+				String tag=x.tag();
+				if (tag=="chs") s.append(x.text());
+				else if (tag=="esc") s.append(escape(x));
+				x=x.next();
+			}
+			return s.toString();
+		}
+	
+		static String escape(Term esc) {
+			// esc    = bs (code / 'u' hex)
+			// code   : bs/fs/quot
+			//          /'b'/'f'/'n'/'r'/'t'
+			Term code=esc.child("code");
+			if (code!=null) {
+				String s=code.text();
+				if (s.equals("b")) return "\b";
+				else if (s.equals("f")) return "\f";
+				else if (s.equals("n")) return "\n";
+				else if (s.equals("r")) return "\r";
+				else if (s.equals("t")) return "\t";
+				else return s; // bs/fs/quot
+			} else { // hex...
+				String hex="0x"+esc.text("hex");
+				int ch=Integer.decode(hex);
+				return String.valueOf((char)ch);
+			}
+		
+		}
+	
+		static Number numberJson(Term num) {
+			// number = neg? digits frac? exp?
+			if (num.child("frac")==null && num.child("exp")==null) {
+				try { return new Integer(num.text()); }
+				catch (NumberFormatException e) { return new BigInteger(num.text()); }
+			}
+			try { return new Double(num.text()); }
+			catch (NumberFormatException e) { return new BigDecimal(num.text()); }
+		}
+	}
+
+
+
+
+sect	References:
+
+refs
+	Gist		Information on the Gist Grammar language: @[http://spinachtree.org/gist]
+	GistAPI		The Gist in Java API: @[http://spinachtree.org/gist/java/api]
+	Json		Json data language: @[http://www.json.org/]
+
+
+format
+	title	h1:prose
+	sect	h2:prose
+	sub1	h3:prose
+	para	p:prose
+	eg	pre:text
+	terms	dl:format
+	refs	dl:format
+	*	ul:format
+
+prose
+	:_	tt
+	~_	em
+	"_"	quote
+	#_	linkID
+	@[_]	link
+
+style
+	.undef { color:red; background-color:yellow; }
+	.title, .author, .date { text-align: center; }
+	.eg { background-color:#FFFDDA; border: thin solid #ECECEC; }
+	dl.terms dt { font-weight:bold; }
+	dl.refs { font-size:small;}
+	dl.refs dd p { margin: 0pt 0pt 10pt 0pt; }
+	.format, .prose, .style { display:none; }
+

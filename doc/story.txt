@@ -75,7 +75,7 @@ A specification will often have a declarative reading, but not necessarily a pro
 
 There are two styles of parser design, one that processes the complete input string and generates a parse tree for the application, and another that generates a stream of events as the parser matches elements in the input string. The full parse tree style is usually simpler for an application to deal with, but an event style may be needed for processing a very large input string or a continuous input stream.
 
-A Gist grammar inherently defines a parse tree structure, but the rules can include event elements to enable an event driven parser. As a specification the Gist grammar should avoid event, but an implementation can choose to add event elements for an event driven style.
+A Gist grammar inherently defines a parse tree structure, but the rules can include event elements to enable an event driven parser. As a specification the Gist grammar should not rely on event elements, but an implementation can choose to add event elements for an event driven application.
 
 In practice formal grammar specifications are sometimes not quite complete, and natural language is used to cover the holes in the grammar. For example, the specification may require a feature that can not be expressed as a context-free grammar, or maybe it is just too awkward to express. For an automated grammar there needs to be some way to express arbitrary features, and to allow an escape into a programming language implementation if necessary. In Gist the event action interface provides an escape-hatch for any special requirements.
 

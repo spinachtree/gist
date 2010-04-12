@@ -46,18 +46,18 @@ public class Scan {
 	
 	/**
 	position of cursor index in the input scan
-	<p>This index may not be a character index. The character encoding
-		may use a byte index, and even in a Java string the use
-		of surrogate pairs the index is not one-to-one with chars.
+	<p>The cursor may not be one-to-one with a character index. The character encoding
+		may use a byte index, and even in a Java string that contains
+		surrogate pairs the index is not one-to-one with chars.
 
 	@return cursor position
 	*/
 	public int pos() { return pos; }
 	
 	/**
-	last term created
-	<p>Terms prior to the event, but the parent host rule will
-		not yet exist (nor any other incomplete parents).
+	tip of parse tree, the last term created
+	<p>Any terms matched prior to the tip can be accessed via the term prior links,
+	 even thought the parent rule may not yet exist (nor any other incomplete parents).
 
 	@return last term
 	*/
@@ -84,7 +84,7 @@ public class Scan {
 
 	/**
 	create a new parse tree node
-	<p>matches text from the given position to current cursor,
+	<p>matches text from the given position to current cursor;
 	nodes after the given term become children of the new node
 	and the new node becomes the next node after the given term.
 

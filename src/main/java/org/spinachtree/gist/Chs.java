@@ -50,8 +50,6 @@ class Chs extends Op {
 	}
 
 	boolean match(Scan scan) {
-//System.out.println(me()+" pos="+scan.pos+" OrMe="+OrMe);
-//		scan.chs++;
 		int ch=scan.chr;
 		int bot=0;
 		int top=size;

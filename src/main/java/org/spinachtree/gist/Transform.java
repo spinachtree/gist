@@ -5,6 +5,13 @@ import org.spinachtree.gist.*;
 import java.lang.reflect.*;
 import java.util.*;
 
+// Transform evalutes a parse tree term by running a method with the same name.
+// The children terms are matched to the method parameters and the argument values
+// are then evaluated recursively.
+
+// If there is no method defined for a term then the result is the matched text.
+// This means that terminal rules do not usually require transform methods.
+
 class Transform {
 	
 	Transform(Class cls) {
@@ -68,7 +75,8 @@ class Transform {
 		if (name.equals("String")) return arg.text();
 		return build(trans,arg);
 	}
-/*	Object buildArg(Object trans,String className,Term arg) {
+/*
+	Object buildArg(Object trans,String className,Term arg) {
 		if (className.equals("java.util.ArrayList"))
 			return listArgs(trans,arg);
 		if (className.equals("oreg.spinachtree.gist.Term"))

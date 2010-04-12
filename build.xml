@@ -8,9 +8,9 @@ ant
 or
 ant build
 
--- will compile source, build gist.jar and run some tests.
+This will compile source, build gist.jar and run some tests.
 
--- see run demos below to run demos from src/demo/java
+To run demos from src/demo/java see run demos below...
 
 -->
 
@@ -49,11 +49,11 @@ ant build
 
 <!-- run demos...................................................................... 
 
-ant eg    --will prompt you for a class name from src/demo/java, eg Arith
+ant eg    ; will prompt you for a class name from src/demo/java, eg Arith
 
 or you may prefer to use:
 
-ant ex -DD=Arith     -- or any other class name from src/demo/java
+ant ex -DD=Arith     ; or any other class name from src/demo/java
 
 -->
 
