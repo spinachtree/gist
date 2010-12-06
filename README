@@ -3,6 +3,8 @@ Gist: Grammar Implicit Syntax Tree
 
 A grammar language with an automated parser.
 
+About to update this to gist-1.7.1, Nov 2010.
+
 See: spinachtree.org/gist for documentation and to download the Java gist.jar
 
 GitHub repo: spinachtree/gist for source files
