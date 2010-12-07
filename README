@@ -1,13 +1,15 @@
 
-Gist: Grammar Implicit Syntax Tree
+title	Gist
 
-A grammar language with an automated parser.
+author	Peter M. Cashin
 
-About to update this to gist-1.7.1, Nov 2010.
+date	2010-11-28
 
-See: spinachtree.org/gist for documentation and to download the Java gist.jar
+Gist is a grammar driven parser that can execute any PBNF grammar.
 
-GitHub repo: spinachtree/gist for source files
+The doc directory contains a PBNF reference and general Gist information.
 
-v 1.4, 11 April 2010
+The demos directory shows some example PBNF grammars. The format of the demo files should be self explanatory, add a demo text file to try your own grammar.
+
+The java directory contains a Java version of Gist, and the java/README file shows how to run the demos, and other Java application examples (remember to change your working directory with: cd java).
 
