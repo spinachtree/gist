@@ -1,0 +1,94 @@
+
+gist
+	tst = 'a' 'bcd' 'd'..'f' nums
+	nums : 48 0x31 48..57 0x30..39
+
+parse	abcde0123
+
+fail	abcde012/
+
+gist
+	odd = !('0'|'2'|'4'|'6'|'8') '0'..'9'
+
+parse	5
+parse	1
+parse	9
+fail	2
+fail	0
+
+gist
+	odd = '0'..'9'^even
+	even : '0'|'2'|'4'|'6'|'8'
+
+parse	5
+parse	1
+parse	9
+fail	2
+fail	0
+
+gist
+	hole : '0'..'9'^mid
+	mid  : '4'..'7'
+
+parse	0
+parse	3
+parse	8
+fail	4
+fail	5
+
+
+gist
+	oe   = &odd num &even num
+	num  : '0'..'9'
+	odd  : '0'..'9'^even
+	even : '0'|'2'|'4'|'6'|'8'
+
+parse	52
+parse	18
+parse	90
+fail	42
+fail	13
+
+gist
+	tst = 'a'* 'bcd'+ 'd'..'f'?
+
+parse	abcde
+parse	bcde
+parse	aaabcdbcd
+
+fail	abcdef
+
+gist
+	txt  = x `x &x `x !x yea `char*
+	x    : 0x20..7e^'%'
+	yea  : '%'|0x20..7e^'##'
+	char : !('#'|'@') (9..32|x|0x80..fe)
+
+parse	abc%pqr xyz
+
+gist
+	txt = x*
+	x : y? z?
+	y : 'y'
+	z : 'z'
+
+parse	yzyz
+
+gist
+	s  = x y z
+	x : 'x' w^'b'*
+	y : (w &w)* 'y'
+	w : 'a'..'z'
+	z : (w|' ')*
+
+parse	xabcyyxy pqry
+
+gist
+	tst = {'a'} {'bcd'} ['d'..'f']
+
+parse	abcde
+parse	bcde
+parse	aaabcdbcd
+
+fail	abcdef
+

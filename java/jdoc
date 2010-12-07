@@ -1,0 +1,3 @@
+
+puts "javadoc......."
+system "javadoc -d javadoc -sourcepath src org.spinachtree.gist"

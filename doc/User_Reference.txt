@@ -1,0 +1,202 @@
+
+title	PBNF Reference
+
+The PBNF grammar rules are defined as:
+
+eg
+	name = expression	-- a one-match rule
+	name : expression	-- terminal string one-match rule
+
+The grammar expression defining a rule can include any of these operators:
+
+eg
+	X | Y		choice of X or Y, longest match
+	X / Y		choice of X else Y, first sequential match
+	X Y		sequence X then Y, space or comma separator (X,Y)
+	X*		longest number of repeated X
+	X+		one or more X, same as: (X X*)
+	X?		optional X, same as: (X / '')
+	X^Y		X but-not Y, equivalent to: (!Y X)
+	!X		not X, fails if X matches, else ''
+	&X		asserts there is an X, same as: !!X
+	(X)		group expression
+	[X]		option, same as: X?
+	{X}		repeat, same as: X*
+	@R		true only if there is a prior R match
+	@=R		match the same value matched by the last prior R
+	R		match rule R and generate a syntax tree node
+	`R		silent match with no syntax tree node
+	''		empty match (never fails)
+	'a'		match a literal character
+	'a'..'z'	match any character in this range
+	'abc'		string match, short for: ('a' 'b' 'c')
+	97		match a character with this code point, ie 'a'
+	0x61		hex value code point match, ie 97 or 'a'
+	0..127		match a character code in this range (eg ASCII chars)
+	0x1..10FFFD	hex value code point range (eg Unicode chars)
+
+
+The :X and :Y stand for any grammar expression, while the :R stands for a rule name. The binding strength, or precedence, increases from the top of the list, to the highest precedence at the bottom. Thus:
+
+eg
+	R = X Y+ Z | !P Q '0'..'9'*
+
+is equivalent to:
+
+eg
+	R = ( (X (Y+) Z)
+	  | ((!P) Q ('0'..'9')*) )
+
+A rule may continue on the next line if there is a choice operator or an unclosed bracket, but an explicit comma ":[,]" is required to continue a sequence into the next line.
+
+sect	Implicit Syntax Tree
+
+The parser generates a syntax tree that is implicitly defined by the PBNF rules. When a terminal rule (defined with a :[:]) is matched it produces a node in the syntax tree that tags the matched text with the rule name. When a rule defined with an :[=] is matched it produce a syntax tree node that contains their component rules as children.
+
+For example:
+
+gist
+	sum = num ('+' num)*
+	num : '0'..'9'+
+
+parse	1+2+3
+
+produces:
+
+	sum
+		num	1
+		num	2
+		num	3
+
+The "'+'" is a literal match and does not produce a syntax tree node (it could if it was defined with a rule name).
+
+A slightly larger example:
+
+gist
+	exp   = term (op1 term)*
+	term  = val (op2 val)*
+	val   = int / '(' exp ')'
+	op1   : '+' / '-'
+	op2   : '*' / '/'
+	int   : '0'..'9'+
+
+parse
+	1+2*(3-4/2+1)-3
+	
+This produces the syntax tree:
+
+	exp 
+	    term val int "1"
+	    op1 "+"
+	    term 
+	        val int "2"
+	        op2 "*"
+	        val exp 
+	            term val int "3"
+	            op1 "-"
+	            term 
+	                val int "4"
+	                op2 "/"
+	                val int "2"
+	            op1 "+"
+	            term val int "1"
+	    op1 "-"
+	    term val int "3"
+
+
+sub1	Comments
+
+In-line to end of line comments can be introduced with either "--" or "//".
+
+sub1	Rule Names References
+
+A rule reference may be a simple local name, or an external reference: :"grammar.rule". Gist may also search external grammars by default for a reference to any rule that is not defined locally.
+
+sub1	Choice Operators
+
+The :"X | Y" longest choice operator will produce the longest match (or the left most one in the case of a tie), but it will only produce one match.
+
+The :"X / Y" first sequential choice operator will first try to match :X, and only if that fails will the second choice :Y be matched. This is the PEG sequential choice operator.
+
+
+sub1	Repeat Operators
+
+The repeat operators are:
+
+eg
+	X?		optional match		X / ''
+	X*		zero or more		Xs = X Xs.. / ''
+	X+		one or more		Xp = X Xp.. / X
+
+The repeat operators are "greedy" and will find the longest match, and no other.
+
+Traditional BNF notations are also available:
+
+eg
+	{ X }		zero or more X, same as X*
+	[ X ]		optional X, same as X?
+
+
+sub1	Literal Values
+
+Literal character values can be expressed in various ways:
+
+eg
+	'a'		literal char, or	97
+	'a'..'c'	range of chars, or 	97/98/99, or 97..99
+	'abc'		literal string		97 98 99
+	''		empty string		never fails
+
+Literal characters boil down to integer values, which will normally be interpreted as Unicode character code points.
+
+
+sub1	The Prior Match Operator
+
+Gist provides a context-sensitive prior match predicate :"@X", which is true only if there is a prior match of :X in the previous (partial) syntax tree. The search for :X checks each prior sibling, then the parent and any of its prior siblings, and so on. For example:
+
+eg
+	S = (X | Y) (@X Z)?
+
+This will match :"(X Z)" or :Y, but not :"(Y Z)".
+
+sub1	The Same Match Operator
+
+Gist provides a context-sensitive prior match operator :"@=X" :
+
+eg
+	S = X Y @=X
+
+The :"@X" matches the same string that the previous :X matched by looking back into the (partial) syntax tree, finding the previous :X, and using the value of that match, to match the same string again. The search for the first prior match may continue prior to the parent node through its prior siblings, and so on back to the root of the syntax tree. If no prior match is found the operator will fail.
+
+---	...
+
+refs
+	The Gist Grammar Language	hhtp://spinachtree.org/gist/into.html
+
+
+format
+	title	h1:prose
+	sect	h2:prose
+	sub1	h3:prose
+	para	p:prose
+	eg	pre:text
+	refs	dl:format
+	---	hr:none
+
+prose
+	:_	tt
+	~_	em
+	"_"	quote
+	#_	linkID
+	@[_]	link
+	^[_]	linkName
+
+style
+	.undef { color:red; background-color:yellow; }
+	.title, .author, .date { text-align: center; }
+	.eg { background-color:#FFFDDA; border: thin solid #ECECEC; }
+	dl { font-size:small; }
+	dl dd p { margin: 0pt 0pt 10pt 0pt; }
+	.format, .prose, .style { display:none; }
+
+

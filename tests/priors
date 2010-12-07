@@ -1,0 +1,30 @@
+gist
+	tst = (pre|'0'..'9'*) ' ' @pre 'p'
+	pre : 'a'..'z'*
+
+parse	abc p
+parse	z p
+fail	0 p
+
+gist
+	tst = pre ' ' @=pre
+	pre : 'a'..'z'*
+
+parse	abc abc
+parse	z z
+parse	zazy zazy
+
+fail	abc abx
+
+gist
+	tst = first sec @=first.pre
+	first = pre
+	sec : ' '
+	pre : 'a'..'z'*
+
+parse	abc abc
+parse	z z
+parse	zazy zazy
+
+fail	abc abx
+

@@ -1,0 +1,42 @@
+
+title	Prose Grammar
+
+This grammar can be used to parse text with notations such as:
+
+	@			-- symbols (one or more symbol char)
+	"..."			-- quotes (literal text)
+	(..) [...] {...} 	-- brackets, with any nested prose
+	
+	~word			-- sigil-word: symbol word
+	~(...)			-- sigil-functor: symbol block
+	.foo(...)		-- sigil-word-functor: symbol word block
+
+gist
+	prose = (`item/dag)*
+	item  = `block/symb/text
+	block = par/box/brace/quote
+	symb  = sigil word? block?
+	sigil : punct^pip+
+	word  : (char^sp^punct/'_')+
+	text  : char^punct+
+	items = `item*
+	par   = '(' `item* ')'
+	box   = '[' `item* ']'
+	brace = '{' `item* '}'
+	quote = quot qstr quot
+	qstr  : (char^quot)*
+	pip   : '('/'['/'{'/')'/']'/'}'
+	quot  : 34
+	sp    : 9..32
+	punct : 33..47/58..64/91..96/123..126
+	dag   : char
+	char  : 0x1..10ffff
+
+parse	Hi "you there..", ~what's up.
+
+parse	foo(bar(thing[me] jig+jog)) etal..
+
+parse	(x[(y)(z)][)
+
+parse	(x[(y)(z)]"[")
+

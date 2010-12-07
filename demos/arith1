@@ -1,0 +1,35 @@
+
+Text-book style grammar with operator based parse tree.
+ -- requires left recursion
+ -- left association and operator precedence are explicit
+ -- app evaluation maps directly into the parse tree structure
+ -- more work for the parser, but very little benefit to the app.
+ -- I prefer the simplicity of the previous arith example
+
+gist
+	exp   = add | sub | term
+	add   = exp '+' term
+	sub   = exp '-' term
+	term  = mul | div | val
+	mul   = term '*' val
+	div   = term '/' val
+	val   = int | '(' exp ')'
+	int   : '0'..'9'+
+
+parse	1+2+3*(3-4/2+1)-5
+
+Star rules prune the parse tree...
+and first choice / replaces longest choice | operator
+
+gist
+	exp   = add / sub / term
+	add   = exp '+' term
+	sub   = exp '-' term
+	term* = mul / div / val
+	mul   = term '*' val
+	div   = term '/' val
+	val*  = int / '(' exp ')'
+	int   : '0'..'9'+
+
+parse	1+2+3*(3-4/2+1)-5
+
