@@ -1,0 +1,120 @@
+
+Gist PBNF grammar in Gist
+
+First a small bootstrap test example...
+
+gist
+	rules = (rule/s)*
+	rule  = name s defn s sel
+	sel   = seq (s 47 s seq)*
+	seq   = rep (32+ rep)*
+	rep   = (ref/code/group) repn?
+	group = 40 s sel s 41 
+	code  = int (46 46 int)?
+	ref   = name
+	name  : (65..90/97..122)+
+	int   : 48..57+
+	repn  : 42..43/63 
+	defn  : 61/58  
+	s     : 9..32* 
+
+parse
+	date = year dash month dash day
+	year : d d d d
+	month: d d?
+	day  : d d?
+	dash : 45
+	d    : 48..57
+
+The previous grammar is a bit restrictive, this is a better bootstrap:
+
+gist
+	rules   = (rule/s)*                  
+	rule    = head s sel                 
+	head    = name star? s defn          
+	sel     = seq (or seq)*              
+	seq     = rep (and rep)*             
+	rep     = item repn?                 
+	item    = ref/code/quote/group       
+	group   = '(' s sel s ')'            
+	code    = int ('.' '.' int)?         
+	quote   = quo ('.' '.' quo)?         
+	ref     = elide? name                
+	quo     : 39 (32..38/40..126)* 39    
+	name    : ('A'..'Z'/'a'..'z')+       
+	int     : '0'..'9'+                  
+	repn    : '*'/'+'/'?'                
+	defn    : '='/':'                    
+	star    : '*'                        
+	elide   : '`'                        
+	or      : s '/' s                    
+	and     : (9/32)+                    
+	s       : 9..32* 
+
+parse
+	date = year '-' month '-' day
+	year : d d d d
+	month: d d?
+	day  : d d?
+	d    : '0'..'9'
+
+Now the full Gist grammar expressed as a boot grammmar:
+- only PEG x/y priority choice, not x|y longest choice
+- no hex numeric char codes 0x20
+- no multi-line sequences (multi-line choices are ok)
+- can't use {many} or [optional] syntax
+- no x^y but-not syntax
+- no comments
+
+gist
+	rules   = (rule / `w)*
+	rule    = head `w alt	                
+	head    = name star? `w defn
+	alt*    = sel (`w '|' `w sel)*
+	sel*    = seq (`w '/' `w seq)*
+	seq*    = rep (`h (',' `w)? rep)*
+	rep*    = elem repn? / prime
+	elem*   = item (`w '^' `w item)*
+	item*   = ref/quote/code/group
+	prime*  = many/option/not/isa/pre
+	group*  = '(' `w alt `w ')'
+	many    = '{' `w alt `w '}'
+	option  = '[' `w alt `w ']'
+	not     = '!' `h rep
+	isa     = '&' `h rep
+	pre     = '@' pat/pec/pan
+	pat     = eq? `h ref
+	pec     = ':' `h item
+	pan     = '&' `h item
+	quote   = quo ('..' quo)?
+	code    = '0' ('x'/'X') hexs / ints
+	ints    = int ('..' int)?
+	hexs    = hex ('..' hex)?
+	ref     = elide? name ('.' name)*
+	name    : alpha alnum*
+	defn    : '=' / ':'
+	star    : '*'
+	repn    : '+'/'?'/'*'
+	int     : digit+
+	hex     : (digit/'a'..'f'/'A'..'F')+
+	quo     : 39 (32..38/40..126)* 39
+	alnum   : alpha/digit
+	alpha   : 'a'..'z'/'A'..'Z'
+	digit   : '0'..'9'
+	eq      : '='
+	elide   : '`'
+	blank   : 9/32
+	print   : 9/32..1114111
+	space   : 9..13/32
+	comment : ('--'/'//'/'#') print*
+	h       : blank*
+	s       : space*
+	w       : (s comment?)*
+
+parse
+	date = year '-' month '-' day
+	year : d d d d
+	month: d [d] -- optional 2nd digit
+	day  : d | d d -- to try the longest choice
+	d    : '0'..'9'
+
