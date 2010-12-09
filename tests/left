@@ -38,7 +38,7 @@ gist
 
 ie a = 'd' ('a'|'b'|'c'|'d')*
 
-parse	dcba
+xparse	dcba
 
 gist
 	a = a 'a' | b

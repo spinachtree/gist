@@ -13,10 +13,10 @@ public class Json {
 		Gist json = new Gist(
 		"	json   =  `s (object | array) `s                 \n"+
 		"	object = '{' `s pairs? `s '}'                    \n"+
-		"	pairs  =  pair (`s '+' `s pair)*                 \n"+
+		"	pairs  =  pair (`s ',' `s pair)*                 \n"+
 		"	pair   = string `s ':' `s val                    \n"+
 		"	array  = '[' `s vals? `s ']'                     \n"+
-		"	vals   =  val (`s '+' `s val)*                   \n"+
+		"	vals   =  val (`s ',' `s val)*                   \n"+
 		"	val    = object|array|string|number              \n"+
 		"	        |true|false|null                         \n"+
 		"	string = quot (chs|esc)* quot                    \n"+
