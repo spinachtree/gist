@@ -1,9 +1,0 @@
-#! usr/bin/ruby
-
-if ARGV.size==1
-	system "java -cp gist.jar org.spinachtree.gist.Glib -test ../tests/#{ARGV[0]}"
-elsif ARGV.size==2
-	system "java -cp gist.jar org.spinachtree.gist.Glib #{ARGV[0]} ../tests/#{ARGV[1]}"
-else
-	puts "*** wrong number of args, use: file, or -demo file, or -test file  (-test default)"
-end
