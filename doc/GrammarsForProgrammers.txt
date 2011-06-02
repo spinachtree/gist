@@ -1,0 +1,388 @@
+
+title	Grammars for Programmers
+
+sect	Introduction
+
+Grammar rules have a long tradition as formal specifications, but it is not always easy for a programmer to implement a parser for a given grammar. This note shows how grammar rules can be automated and directly employed as functions in an application programming language.
+
+The grammar rules are extended to specify not only the input strings that will be matched (as in a traditional grammar) but also the output data structure that will be generated. The grammar thus fully specifies a function that transforms a string into a data structure. 
+
+A little example will show the general idea. The :date grammar matches dates such as :[2010-12-13] with a year-month-day format, the details do not matter for the moment:
+
+eg
+	date  = year '-' month '-' day
+	year  : d d d d
+	month : d d?
+	day   : d d?
+	d     : '0'..'9'
+
+This grammar specification will match the input string :[2010-12-13] and generate the output:
+
+eg
+	["2010", "12", "13"]
+
+The output data structure is inherent in the :date rule, it is simply a list of the strings matched by the three component rules. This list of strings will be generated as a native data structure in the host programming language, but we can see it as a generic #Json data structure, which can be implemented in almost any programming language.
+
+The important point is that the grammar rules implicitly define the data structure that will be generated from an input string that matches the grammar rules. This means that we can implement a function to automate this grammar. 
+
+More than that, we can implement a function that can take a grammar and automatically generate the function that implements that particular grammar specification.
+
+If :gist is an implementation of this function in some host programming language then we can create a function from the grammar rules, and this function can then be used to transform an input string into a data structure. For example, if :date_grammar is a string containing the grammar rules:
+
+eg
+	date = gist(date_grammar)
+	ymd  = date.transform("2010-12-13")
+
+The variable :ymd is now: :[["2010", "12", "13"]]. It could hardly be easier than that to use a grammar specification in an application program. Of course you could equally well implement the :date example with a regular expression.
+
+A grammar is inherently more powerful than a regular expression, so grammars can be used for applications that are beyond a regular expressions. But you may prefer to use a grammar anyway, since a grammar provides a neat formal specification that is easy for people to read and share.
+
+Here is an example of a problem that is more difficult for a regular expression: to compute the value of a simple arithmetic expression:
+
+eg
+	arith = term (add term)*
+	term  = val (mult val)*
+	val   = num | '(' arith ')'
+	add   = '+' | '-'
+	mult  = '*' | '/'
+	num   = '0'..'9'+
+
+This grammar specification will match the input string: :[1+2*(8-6/2)-3] and generate the output:
+
+eg
+	["1", "+", ["2", "*", ["8", "-", ["6", "/", "2"]]], "-", "3"]
+
+A list of strings like this can be evaluated to a numeric result using a recursive left reduce function.
+
+
+sect	Related Techniques
+
+The #TXL language is a unique programming language that automates grammar rules together with transform rules. The techniques discussed in this note are a simple subset of the facilities provided in TXL. Rather than using a special purpose language to automate grammar rules we are extending a general purpose programming language with the ability to employ grammar rules.
+
+The logic programming language Prolog provides somewhat similar capabilities by using a Definite Clause Grammar DCG. Haskel and Scala are examples of languages that provide a parser combinator library to enable grammars to be implemented, and they have pattern matching rules that can be used for semantic methods. We are using a simpler Committed Choice CCG grammar (to be discussed shortly) to enable the grammar specification to be directly interpreted without the need for functional combinators.
+
+A popular option is to use a parser-generator to create a parser from the grammar rules in a target programming language. The parser typically builds a parse tree data structure that the application program navigates to process the input text. There may also be a Document Object Model to provide an application programming interface into the parse tree. The approach used here hides the parse tree by defining the output data that a grammar will generate.
+
+Some parsers allow semantic methods to be invoked directly from the grammar rules, or methods may be triggered by an event driven parser. This is not the same as the approach discussed here. Although we can associate transform methods with grammar rules they are only invoked after the parser has completely parsed the input. Applications usually work with the data structure output defined by the grammar rules without the need for transform methods.
+
+
+sect	Grammar Languages
+
+A careful choice of grammar rules can simplify the task of writing a parser program to recognize text strings that correspond to the grammar specification. A traditional choice has been a Context Free Grammar, or #CFG, but the automation of a CFG is still quite difficult. We focus here on a simpler kind of grammar, a Committed Choice Grammar, or #CCG.
+
+A CCG has one big restriction, it excludes ambiguity, the grammar rules can match an input in only one way. A traditional CFG can easily specify ambiguities that occur in a natural human language, but a CCG can not. On the other hand, ambiguity in a computer language is a defect that we want to eradicate, so a CCG is a good fit for computer applications. A CCG is easy to parse, in effect we can execute the grammar rules directly as a parser. This enables a generic parser that can automatically interpret any CCG grammar we choose to write.
+
+The expressive power of a grammar is judged by the languages that it can express. It is not possible to directly compare the power of a CCG with the power of a traditional CFG: there are ambiguous languages that a CFG can define that are beyond a CCG, and there are languages that a CCG can define that are beyond a CFG (i.e. a CCG can define some context sensitive languages). The good news is that for unambiguous computer languages a CCG is a very effective replacement for a traditional CFG. A #PEG (Parser Expression Grammar) is a well defined subset of a CCG.
+
+The particular CCG grammar used here uses #PBNF, or Parser-BNF, a version of the classic #BNF grammar rules. If you are familiar with grammar specifications and parser generators then please don't make too many assumptions. A CCG is not a traditional grammar, it is much simpler, it is closer to a PEG. More on this shortly.
+
+Traditional grammar parsers often process the input text into tokens (words) before they apply the grammar rules. The token are typically defined with regular expressions. But PBNF, like a PEG, does not use a token pre-parse, the grammar rules fully define the input syntax, terminal matching rules in the grammar correspond to tokens.
+
+
+sect	PBNF Grammar Rules
+
+Each PBNF grammar rule names a committed choice grammar expression, there are two forms:
+
+eg
+	x = expression  -- a composite rule with named components
+	x : expression  -- a terminal rule to match a string
+
+The grammar expression may be any combination of:
+
+eg
+	x | y		-- a choice that selects the longest match of x or y
+	x / y		-- first match, x must fail if y is to match, same as: (x | !x y)
+	x , y		-- a sequence of x followed by y (the comma is optional)
+	x*		-- repeat x as many times as possible (including zero)
+	x+		-- one or more x, syntactic sugar for: x x*
+	x?		-- optional x, matches an x if it can: (x|'')
+	!x		-- not x predicate, matches nothing, but fails if x could be matched
+	&x		-- is x predicate, same as !!x (look ahead and fail unless x matches)
+	x^y		-- x but-not y, syntactic sugar for (!y x)
+	(x y)		-- grouping a sub-expression into a term
+	@z		-- predicate, true only if an ancestor match of rule z exists
+	@=z		-- match the same string as the previous ancestor match of rule z
+	`z		-- matches rule z as a literal, without an output result
+	'a'		-- literal character match
+	'a'..'f'	-- matches a character in the given range
+	122		-- matches a character with this numeric code value (or 0x7A, 'z')
+	48..57		-- matches a character in this range of numeric code values
+
+The x and y in these expressions can be any grammar expression or rule name, z names a rule. The precedence increases from the top of this list to the bottom, so that:
+
+eg
+	x y | y 48..57+		is interpreted as:	(x, y) | (y, (48..57)+)
+
+The PBNF rules look like traditional grammar rules, and they usually match in exactly the same way. But PBNF rules are committed choice rules, the longest match (or the prescribed unique match) is the only acceptable match.
+
+
+sect	Committed Choice Rules
+
+A traditional CFG allows rules such as:
+
+eg
+	number ::= digit+
+	digit  ::= '0'..'9'
+
+This seems simple enough, a natural number is one or more digit. The same thing can also be expressed as a digit followed by any number of digits:
+
+eg
+	number  ::= digit digit*
+
+Or, yet again, as a digit OR a digit followed by a number:
+
+eg
+	number  ::= digit | digit number
+
+But ~none of these are what I meant to say. I wanted a number to be represented by a string of digits, meaning ~all the digits, not just some of them. To make this clear I need to say:
+
+eg
+	number  ::= digits !digit
+	digits  ::= digit | digit digits
+
+The :[!digit] is necessary to ensure that the number rule can not match just some of the digits. The other definitions need to be corrected in the same way:
+
+eg
+	number  ::= digit+ !digit  -- only the longest match
+
+In an unambiguous grammar we do not want elements such as numbers, words, names or other items to be sub-divided, the longest match is the only meaningful match. A traditional grammar rule will accept that a name like :[foobar] can match in 6 possible ways, but in practice for an unambiguous language that is not what is wanted at all, it should match a name in only one way. If we want to match say :[foo] followed by :[bar] then we would write :[foo-bar] or :[foo bar], or we would use a more pedantic grammar to say exactly how a name string may be sub-divided without ambiguity.
+
+At first sight the PBNF rules appear to be the same as traditional rules, we simply use a :[=] instead of the :[::=], but the grammar expression has a committed choice interpretation. A CCG rule will only match in one unique way (such as the longest choice), whereas a traditional CFG interpretation includes multiple possible matches (shorter than the longest match).
+
+Because a CCG grammar ~only matches the longest choice we can simply say:
+
+eg
+	number = digit+
+
+There is no need to add the :[!digit], this is implicit in the CCG interpretation. After all, the longest match of one or more digit would not be the longest match if it was followed by another digit.
+
+Another example. This traditional CFG grammar rule will match :[abc]:
+
+eg
+	s ::= ('a' | 'ab') 'bc'  -- matches "abc", or "abbc"
+
+But the equivalent committed choice rule will ~not match :[abc]:
+
+eg
+	s = ('a' | 'ab') 'bc'  -- matches "abbc" but not "abc"
+
+If the input starts with :[ab] then the longest match committed choice will exclude the possibility of matching the input :[abc]. In a committed choice grammar we need to be wary of choices that overlap, usually they are a mistake and should be rewritten to clarify the intent. For the previous example it could be:
+
+eg
+	s = 'ab' ('c' | 'bc')  -- matches "abc" or "abbc"
+
+The difference between a CCG and a traditional CFG also appear with the repeat operator. For example this traditional grammar :enz rule matches the longest string of digits that ends with a :['0'] (which may include other :['0']s):
+
+eg
+	enz ::= digit* '0'  -- a number that ends with a zero
+
+But as a CCG the :enz rule will always fail since the :[digit*] will match the longest sequence of digits, so there can never be a subsequent :['0']. Instead we need to use a more pedantic rule:
+
+eg
+	enz  = (nz* '0')*  -- any number of non-zero digits followed by '0', any number of times
+	nz   = '1'..'9'
+
+Negation can simplify cases like this, but for an unambiguous grammar the requirement for a prefix match is surprisingly rare.
+
+Some of us have become accustomed to sloppy prefix matching with regular expressions, we just match everything (say with :[.*]), followed by an end term; the regular expression engine will back off to match the end term if it can. To be pedantic, and efficient, we should only match characters that do not consume the end term, but the sloppy version is very convenient. A CCG does not afford the luxury of a sloppy prefix match, we must be more pedantic.
+
+A CCG is usually exactly what we want (with mutually exclusive choices), but sometimes it must be expanded to specify all the acceptable choices without ambiguity. In practice CCG rules provide a very neat fit for unambiguous computer languages.
+
+
+sect	Output Data Structure
+
+Terminal rules match a string and return that string as their result. Terminal rules are designated with a :[:] instead of a :[=]. Designating a rule as a terminal rule makes no difference to how an input is matched, its only purpose is to define the output that it will produce.
+
+For example, the :date terminal rule will produce the string it matches:
+
+eg
+	date  : year '-' month '-' day
+	year  : d d d d
+	month : d d?
+	day   : d d?
+	d     : '0'..'9'
+
+The input: :[2010-12-13] will produce the output: :[2010-12-13]. That's not much help unless you only need to know if an input can or can-not be matched by the date grammar.
+
+A composite rule, defined with :[=], refers to other rules and it produces a result that is a list of the results produced by the components in the order they were matched.
+
+eg
+	date  = year '-' month '-' day
+	year  = d d d d
+	month = d d?
+	day   = d d?
+	d     = '0'..'9'
+
+The input: :[2010-12-13] will now generate the list structure:
+
+eg
+	[["2", "0", "1", "0"], ["1", "2"], ["1", "3"]]
+
+The :d rule matches with zero components, so it acts as a terminal rule even though it is not explicitly designated as a terminal rule. The other rules accumulate lists of component results as shown.
+
+Of course we probably don't want all the digits matched individually, so we designate some terminal rules:
+
+eg
+	date  = year '-' month '-' day
+	year  : d d d d
+	month : d d?
+	day   : d d?
+	d     : '0'..'9'
+
+The input: :[2010-12-13] will now generate the output:
+
+eg
+	["2010", "12", "13"]
+
+A terminal rule will produce a string result regardless of its components. For example:
+
+eg
+	hash  : '#' date
+	date  = year '-' month '-' day
+
+The :hash rule will match the input: :[#2010-12-13] and because it is a terminal rule it will produce the same output: :[#2010-12-13]. How the components of the date were matched becomes irrelevant. A terminal rule always generates a result that is the full string that the rule matched.
+
+If a composite rule matches a single component, then that component is the result, rather than a list containing that one result. This single component exception eliminates excessive nesting of lists, for example:
+
+eg
+	thing  =  this | that | date
+
+The :thing rule will return a :date such as :[["2010", "12", "13"]] without wrapping it into an outer list.
+
+Sometimes we don't want to generate all the components in a composite rule. For example:
+
+eg
+	numbers = number (comma number)*
+	comma   : space* ',' space*
+	number  : '0'..'9'+
+	space   : 9|10|13|32
+
+The :numbers rule will match the input string: :[12, 34, 567] and produce the output:
+
+eg
+	["12", ", ", "34", ", ", "567"]
+
+We can use a back-tick prefix :[`comma] to eliminate this component from the output data:
+
+eg
+	numbers = number (`comma number)*
+
+The result will now be:
+
+eg
+	["12", "34", "567"]
+
+In summary, when a composite rule matches:
+
+pre
+	0 components, or it is a terminal rule, it produces a string result
+	1 component, it returns that component result
+	2 or more components, it returns a list of the component results
+
+
+sect	Object Map Results
+
+The Json data language has two composite types: a list and an object. A Json object can be implemented as a map data structure which associates a string key value with a Json value. A grammar rule will return an object (a map) if the rule body is enclosed in braces, :[{ ... }], for example:
+
+eg
+	date  = { year '-' month '-' day }
+	year  : d d d d
+	month : d d?
+	day   : d d?
+	d     : '0'..'9'
+
+The input: :[2010-12-13] will now generate the Json object:
+
+eg
+	{ rule: "date", year: "2010", month: "12", day: "13" }
+
+How the components are extracted from an object will depend on how a Json object is implementation in your programming language. In JavaScript the :month can be extracted with: :[result.month] or: :[result['month']].
+
+You may also choose to enclose a rule body in square brackets: :[[...]] to designate a list result. There is usually no need since this is the default result anyway, but it is slightly different in that the result will always be a list, even for a zero or one component result.
+
+The Json lists and maps are usually sufficient to represent the results for any grammar. The final result of the grammar may then be processed into some other data structure in whatever way the application wants.
+
+
+sect	Custom Transform Methods
+
+To generate output other than a Json list or object we can associate custom transform methods with grammar rules. A transform method takes the rule's component results as arguments, and may process them in any way it chooses. The methods are implemented in the same programming language that implements the grammar function. Using custom transform methods a grammar can generate any desired output.
+
+For example, the :date rule can be associated with a transform method that creates a :[new Date(year,month,day)] object from the component results.
+
+A selected few rules in a grammar may be given transform methods, the other rules will return a list (or object) of their component results in the normal way.
+
+
+sect	Conclusions
+
+A grammar provides a powerful succinct formal specification. But traditional grammars are difficult to deal with. However, if we are only concerned with computer languages, without ambiguity, then we can use a simpler committed choice grammar to efficiently automate a parser.
+
+A traditional grammar specifies a language as the strings that it can generate, or the strings that it can match, but it does not specify anything else. Extending the grammar to specify an output that will be generated when the grammar rules match an input string enables us to use a grammar to define a function.
+
+A grammar transform function can be automatically generated from a grammar specification, and this function is easy to apply in an application program.
+
+
+sect.end	End Notes
+
+sub#BNF		BNF Backus-Naur Form
+
+Backus-Naur Form (or Backus-Normal Form) is the traditional notation to express a Context Free Grammar CFG for computer language specifications. BNF was developed in the 1950’s and used to define Algol-60. The notation has evolved and there are several variants, such as EBNF (and a different EBNF used to define XML) and ABNF used to define many IETF RFC internet specifications.
+
+See: @[http://en.wikipedia.org/wiki/Backus–Naur_Form] 
+
+sub#CFG		CFG Context Free Grammar
+
+The formal grammar specifications for programming languages are traditionally based on a CFG expressed in some form of BNF. Regular expressions are a subset (ie can express a subset of the languages) of a CFG, and a CFG is a subset of context sensitive grammars which are a subset of unrestricted grammars that can express anything that a Turing machine can compute.
+
+See: @[http://en.wikipedia.org/wiki/Context-free_grammar]
+
+sub#CCG		CCG Committed Choice Grammar.
+
+In a CCG every grammar operator (choice, repeat, etc) must make a committed choice to a unique match for any given input string, or fail. This excludes ambiguity. A Parser Expression Grammar, or PEG, is a formally defined example of a CCG.
+
+A traditional CFG allows grammar operators to have multiple ways to match an input, but when a CFG is used to define an unambiguous language the possibility of multiple matches are almost always extraneous and incorrect. Because a CCG eliminates multiple choices (and the rules act as functions) a CCG grammar is closed under composition, but a traditional CFG is not.
+
+A CFG can express an ambiguous language while a CCG can not, but a CCG can have grammar operators such as negation and others that allows a CCG to express context sensitive languages that are beyond a CFG.
+
+sub#Json	Json Data Language
+
+The Json data language provides "list" and "object" (or map) data structures. The syntax is the same as the literal list and object notation in the JavaScript language, but these basic data structures can be implemented in almost any programming language. It is a standard IETF MIME type, RFC 4726. Json translators have been implemented in most programming language.
+
+See: @[http://json.org]
+
+RFC 4627: @[http://www.ietf.org/rfc/rfc4627.txt]
+
+sub	Parser Generators
+
+A parser for a simple grammar may be programmed by hand, and some programming languages provide features that support more elaborate parsers, for example TXL, Prolog, or combinators in Haskel or Scala. Otherwise a parser generator can be used. There is a long history of parser generators or compiler-compilers, starting with Yacc. ANTLR is a good example of a modern parser generator together with grammar design and testing tools.
+
+It is much easier to fully automate a parser for a CCG or PEG grammar since these grammars can be directly implemented with a top-down recursive descent parser.
+
+ANTLR parser-generator: @[http://www.antlr.org/]
+
+sub#PBNF	PBNF or Parser-BNF
+
+Parser-BNF is a form of BNF which uses traditional BNF notation to represent a CCG. Ambiguity is eliminated in every grammar expression, so the interpretation of PBNF is deterministic.
+
+
+sub#PEG		PEG Parser Expression Grammar
+
+PEG provides a specific example of a CCG with has a formal specification that was published by Bryan Ford in 2004. It has generated interest as a simpler way to define a grammar that enables an efficient linear time parser.
+
+See: @[http://en.wikipedia.org/wiki/Parsing_expression_grammar]
+
+PEG: @[http://pdos.csail.mit.edu/~baford/packrat/]
+
+sub#TXL		TXL language
+
+TXL is a special purpose language designed for processing grammar rules and transform rules. The grammar rules can be ambiguous and the transform rules can control and transform the parse tree terms defined by the grammar rules.
+
+See: @[http://www.txl.ca/]
+
+
+css
+	body { background-color: linen; margin: 20pt; }
+	.eg { background-color: white; }
+	.end { margin-top:20pt; padding-top:10pt; border-top: thin solid black; }
+	
+	code { background-color: white; padding: 0pt 2pt; }
+

@@ -1,36 +1,39 @@
 #! usr/bin/ruby
 
-# this script assumes the working directory is the directory containing this file.......
+# this script assumes the working directory is: gist/java/
 
 puts "compile gist..........."
 files=Dir.glob("src/org/spinachtree/gist/*.java").join(" ")
 system "javac -d class -sourcepath src #{files}"
 
-# puts "run Test..........."
+# puts "run Test........... first development tests..."
 # system "java -cp class org.spinachtree.gist.Test"
 # 
-# puts "run Boot test..........."
+# puts "run Boot test........... development tests..."
 # system "java -cp class org.spinachtree.gist.Boot"
 
-system "ruby example.rb"
-
-puts "run PBNF.........."
-system "java -cp class org.spinachtree.gist.PBNF"
-
+# -- make a new gist.jar ----------------------------------------------------
 
 puts "gist.jar......."
 system "jar cf gist.jar -C class org/spinachtree/gist"
 
 
-puts "compile tests......."
-tests=Dir.glob("tests/*.java").join(" ")
-system "javac -d class -classpath gist.jar #{tests}"
+# -- run examples -----------------------------------------------------------
 
-# puts "run Test1..........."
-# system "java -cp class Test1"
+system "ruby examples/examples.rb"
 
-system "ruby test.rb"
+# -- testing and performance.... ---------------------------------------------
 
+# puts "run PBNF.........."
+# system "java -cp class org.spinachtree.gist.PBNF"
+
+
+# -- compile and run test cases ---------------------------------------------
+
+system "ruby tests/tests.rb"
+
+
+# -- javadoc ----------------------------------------------------------------
 
 puts "javadoc......."
 system "javadoc -d javadoc -sourcepath src org.spinachtree.gist"

@@ -93,12 +93,4 @@ gist
 
 parse	xabcyyxy pqry
 
-gist
-	match = {'a'} {'bcd'} ['d'..'f']
-
-parse	abcde
-parse	bcde
-parse	aaabcdbcd
-
-fail	abcdef
 

@@ -94,8 +94,8 @@ class Op_rules extends Op { // grammar rules....
 		return tag;
 	}
 	
-	String span_rule(Span span) {
-		return rules[span.tag].name;
+	Op_rule span_rule(Span span) {
+		return rules[span.tag];
 	}
 	
 	public String toString() {
@@ -111,10 +111,13 @@ class Op_rule extends Op { // rule container....
 	Op_rule(String name,String defn,Op body) {
 		this.name=name; // name defn body
 		this.defn=defn; // = or :
-		this.body=body; // grammar expression Op
+		if (body instanceof Op_list) { mode=1; this.body=((Op_list)body).op; }
+		else if (body instanceof Op_map) { mode=2; this.body=((Op_map)body).op; }
+		else this.body=body; // grammar expression Op
 	}
 	
 	String name, defn;
+	int mode=0; // default=0 []=1 {}=2
 	Op body;
 	boolean composed=false;
 		
@@ -127,6 +130,24 @@ class Op_rule extends Op { // rule container....
 	public String toString() {
 		return String.format("%s %s %s%n",name,defn,body);
 	}
+}
+
+class Op_map extends Op { // { body.. } 
+
+	Op_map(Op op) {
+		this.op=op;
+	}
+
+	Op op;
+}
+
+class Op_list extends Op { // [ body.. ] 
+
+	Op_list(Op op) {
+		this.op=op;
+	}
+
+	Op op;
 }
 
 

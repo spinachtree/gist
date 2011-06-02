@@ -1,6 +1,6 @@
 #! usr/bin/ruby
 
-# this script assumes the working directory is the directory containing this file.......
+# this script assumes the working directory is: gist/java/
 
 
 puts "compile tests......."

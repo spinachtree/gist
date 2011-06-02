@@ -17,7 +17,7 @@ class Parser {
 		return rules.op_call(name,elide);
 	}
 	
-	String span_rule(Span span) {
+	Op_rule span_rule(Span span) {
 		return rules.span_rule(span);
 	}
 	

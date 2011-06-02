@@ -15,17 +15,17 @@ class PBNF {
 
 	static final String pbnfGrammar = 
 	"pbnf    = (rule | `w)*	    				\n"+
-	"rule    = name `w defn `w sel				\n"+
+	"rule    = name `w defn `w (map | list | sel)		\n"+
+	"map     = '{' `w sel `w '}'				\n"+
+	"list    = '[' `w sel `w ']'				\n"+
 	"sel     = alt (`w '|' `w alt)*				\n"+
 	"alt     = seq (`w '/' `w seq)*				\n"+
 	"seq     = rep (`h (',' `w)? rep)*			\n"+
 	"rep     = elem repn? | prime				\n"+
 	"elem    = item (`w '^' `w item)*			\n"+
 	"item    = ref|quots|code|group     			\n"+
-	"prime   = many|option|not|isa|pre  			\n"+
+	"prime   = not|isa|pre  				\n"+
 	"group   = '(' `w sel `w ')'				\n"+
-	"many    = '{' `w sel `w '}'				\n"+
-	"option  = '[' `w sel `w ']'				\n"+
 	"not     = '!' `h rep					\n"+
 	"isa     = '&' `h rep					\n"+ 
 	"pre     = '@' eq? `h name ('.' name)*			\n"+
@@ -63,12 +63,20 @@ class PBNF {
 		return new Op_rule((String)xs[0],(String)xs[1],(Op)xs[2]);
 	}
 
-	public Op sel(Object[] seqs) {
+	public Op map(Object[] xs) {  //  { body.. }
+		return new Op_map((Op)xs[0]);
+	}
+
+	public Op list(Object[] xs) {  //  [ body.. ]
+		return new Op_list((Op)xs[0]);
+	}
+
+	public Op sel(Object[] seqs) { // x|y
 		if (seqs.length==1) return (Op)(seqs[0]);
 		return new Op_sel(seqs);
 	}
 
-	public Op alt(Object[] seqs) {
+	public Op alt(Object[] seqs) { // x/y
 		if (seqs.length==1) return (Op)(seqs[0]);
 		return new Op_alt(seqs);
 	}
@@ -95,14 +103,6 @@ class PBNF {
 		for (int i=1;i<xs.length;i++) xs[i-1]=new Op_not((Op)xs[i]);
 		xs[xs.length-1]=x;
 		return new Op_seq(xs);
-	}
-	
-	public Op many(Object[] xs) { // { x }
-		return new Op_rep((Op)xs[0]);
-	}
-	
-	public Op option(Object[] xs) { // [ x ]
-		return new Op_opt((Op)xs[0]);
 	}
 	
 	public Op not(Object[] xs) { // !x

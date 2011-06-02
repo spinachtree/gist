@@ -1,0 +1,55 @@
+<html>
+<head>
+	<title>Gist Demo</title>
+	<script src='../spinachtree.gist.js'></script>
+	<style type="text/css">
+		body { background-color: linen;}
+		textarea { font: medium monospace; }
+	</style>
+</head>
+<body>
+	<h1>Gist Demo</h1>
+	<p>Select an example, and hit "GO"...</p>
+	<form>
+		<label for="eg">Grammar example: </label>
+		<select name="grammars" value="examples" type="button" onchange="do_example(this.form, this.value)">
+		  <option value="date0">Date - simple list</option>
+		  <option value="date1">Date - composite rules</option>
+		  <option value="date2">Date - with a separator </option>
+		  <option value="date3">Date - back-tick removes results </option>
+		  <option value="date4">Date - object map result</option>
+		  <option value="expr">Arith - expr</option>
+		  <option value="uri">URI - decode</option>
+		  <option value="json">Json - parser</option>
+		  <option value="xml">XML - core</option>
+		  <option value="blank">Blank Slate...</option>
+		</select>
+		<br />
+		<textarea id="grammar" name="grammar" cols="60" rows="10"></textarea>
+		<br />
+		<label for="input">Input... </label>
+		<br />
+		<textarea id="source" name="source" cols="60" rows="5">2010-12-13</textarea>
+		<br />
+		<input id="do_tran" value="GO" type="button" onclick="do_transform(this.form)" />
+		<label >Result... </label>
+		<br />
+		<textarea name="result" cols="60" rows="5">
+Works on: Safari 5.0, Firefox 3.6+, Chrome 11.0, IE 8.0, ....
+
+If grammar is empty or the GO button fails then
+sorry, you will need to download another browser...
+		</textarea>
+		<br />
+		<label >Edit the input or the grammar rules as you like...</label>
+		<br /><br />
+		<label for="nb">Notes</label>
+	</form>
+	<p id='note'></p>
+	<p>To read more see:
+	  <a href='http://spinachtree.org/gist/guide.html'>http://spinachtree.org/gist/guide.html</a></p>
+	<p>JavaScript API examples see:
+	  <a href='http://spinachtree.org/gist/examples.js.html'>http://spinachtree.org/gist/examples.js.html</a></p>
+	<pre><script src='demo.js'></script></pre>
+</body>
+</html>

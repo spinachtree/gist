@@ -3,18 +3,21 @@ title	Gist in Java
 
 author	Peter Cashin
 
-date	2011-03-15
+date	2011-5-1, 2011-03-15
 
 This is a Java version of Gist, a PBNF grammar transform parser.
 
-The doc directory contains an introduction overview: GrammarsForProgrammers.
+The gist/doc directory contains an introduction overview: GrammarsForProgrammers.
 
-The examples directory contains some PBNF grammar-transform examples. These examples can be executed from a shell console, or the example.rb ruby script.
-
-The package: org.spinachtree.gist is available in the gist.jar, and has only one public class, Gist. See javadoc/.
+The package: org.spinachtree.gist is available in the gist.jar. This is a stand-alone package for Gist applications. It has only one public class, Gist, see javadoc/.
 
 The make.rb script will re-compile and generate a new gist.jar, javadoc, etc..
 
+The examples directory contains some PBNF grammar-transform examples. These examples can be executed from a shell console, or with cd = <path>/gist/java/ by executing: ruby examples/examples.rb
+
+
+2011-5-1:
+-- added {...} [...] rule output modes and defaults (deleted: many {x}, option [x]).
 
 
 Development Notes -------------------------

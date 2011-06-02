@@ -1,0 +1,36 @@
+<html>
+<head>
+	<title>Gist Examples</title>
+	<script src='../spinachtree.gist.js'></script>
+	<style type="text/css">
+		body { background-color: linen;}
+		object { background-color: white; font-family: monospace;}
+	</style>
+</head>
+<body>
+	<h1>Application Examples</h1>
+	<p>These examples show how to use the Gist grammar API.</p>
+	<p>For demo examples see:
+		<a href='http://spinachtree.org/gist/demo.html'>http://spinachtree.org/gist/demo.html</a>
+	</p>
+	<p>To read more see:
+		<a href='http://spinachtree.org/gist/guide.html'>http://spinachtree.org/gist/guide.html</a>
+	</p>
+	<form>
+		<label for="eg">Example: </label>
+		<select name="examples" value="examples" type="button" onchange="example(this.value)">
+		  <option value="date.object.client.js">Date -- object result in browser client</option>
+		  <option value="date.method.client.js">Date -- method result in browser client</option>
+		  <option value="date.list.node.js">Date -- list result on node.js</option>
+		  <option value="date.object.node.js">Date -- object result on node.js</option>
+		  <option value="calc.node.js">Calc -- arith result on node.js</option>
+		  <option value="json.methods.node.js">JSON -- methods result on node.js</option>
+		</select>
+	</form>
+	<div id='src'>
+	<object id='src' data='date.object.client.js' type='text/plain' width='800' height='600'> </object>
+	</div>
+	
+	<pre><script src='example.js'></script></pre>
+</body>
+</html>
